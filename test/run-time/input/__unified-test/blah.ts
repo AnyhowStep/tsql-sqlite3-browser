@@ -2,7 +2,7 @@ import * as squill from "@squill/squill";
 import * as sqlite3 from "../../../../dist";
 import * as w from "../../../../dist/worker/worker-impl.sql";
 import * as worker from "worker_threads";
-
+declare const isBigInt : any;
 const myWorker = new worker.Worker(`${__dirname}/../../../../dist/worker/node-worker.js`);
 
 const sqlite3Worker = new w.SqliteWorker({
@@ -35,12 +35,65 @@ pool.acquire(async (connection) => {
             { x : 3 },
         ]
     );
-    return T
+    await T
         .where(() => true)
         .fetchValue(
             connection,
             columns => squill.double.stdDevPop(columns.x)
-        );
-}).then((result) => {
-    console.log(result);
+        )
+        .then((result) => {
+            console.log(result);
+        });
+
+    await T
+        .where(() => true)
+        .fetchValue(
+            connection,
+            () => squill.countAll()
+        )
+        .then((result) => {
+            console.log(result);
+        });
+
+    await connection.createFunction("IS_BIGINT", (x) => {
+        return isBigInt(x);
+    });
+
+    await squill
+        .selectValue(() => squill
+            .makeCustomOperator1<unknown, boolean>(
+                (arg) => {
+                    return squill.functionCall(
+                        "IS_BIGINT",
+                        [
+                            squill.BuiltInExprUtil.buildAst(arg),
+                        ]
+                    )
+                },
+                squill.dtBoolean()
+            )(BigInt(1))
+        )
+        .fetchValue(connection)
+        .then((result) => {
+            console.log(result);
+        });
+
+    await squill
+        .selectValue(() => squill
+            .makeCustomOperator1<unknown, boolean>(
+                (arg) => {
+                    return squill.functionCall(
+                        "IS_BIGINT",
+                        [
+                            squill.BuiltInExprUtil.buildAst(arg),
+                        ]
+                    )
+                },
+                squill.dtBoolean()
+            )(1)
+        )
+        .fetchValue(connection)
+        .then((result) => {
+            console.log(result);
+        });
 });

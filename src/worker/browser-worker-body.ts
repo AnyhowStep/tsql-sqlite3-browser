@@ -5,6 +5,31 @@ declare let initSqlJs : typeof import("../sql-wasm/sql-wasm-debug").default;
 import * as sqljs from "../sql-wasm/sql-wasm-debug";
 import {FromSqliteMessage, ToSqliteMessage, SqliteAction} from "./worker.sql";
 
+class MyBigIntPolyfill {
+    private value : string;
+    constructor (x : any) {
+        this.value = String(x);
+    }
+    toString () {
+        return this.value;
+    }
+}
+let bigIntPolyfilled = false;
+if (typeof BigInt === undefined) {
+    bigIntPolyfilled = true;
+    BigInt = (
+        (x : any) => new MyBigIntPolyfill(x) as unknown as bigint
+    ) as any;
+}
+
+function isBigInt (x : any) : x is bigint {
+    if (bigIntPolyfilled) {
+        return x instanceof MyBigIntPolyfill;
+    } else {
+        return typeof x == "bigint";
+    }
+}
+
 function initWorker (
     postMessage : (data : FromSqliteMessage) => void
 ) {
@@ -52,6 +77,18 @@ function initWorker (
                 const db = await getOrCreateDb();
                 //console.log(data.sql);
                 const execResult = db.exec(data.sql);
+                if (bigIntPolyfilled) {
+                    for (const resultSet of execResult) {
+                        for (const row of resultSet.values) {
+                            for (let i=0; i<row.length; ++i) {
+                                const value = row[i];
+                                if (isBigInt(value)) {
+                                    row[i] = value.toString();
+                                }
+                            }
+                        }
+                    }
+                }
                 postMessage({
                     id : data.id,
                     action : data.action,
@@ -117,8 +154,9 @@ function initWorker (
                  *
                  * https://tc39.es/ecma262/#sec-function-calls-runtime-semantics-evaluation
                  */
-                const indirectEval = eval;
-                const impl = indirectEval("(" + data.impl + ")");
+                //const indirectEval = eval;
+                //Actually, maybe we do want direct eval
+                const impl = eval("(" + data.impl + ")");
                 db.create_function(
                     data.functionName,
                     data.options,
@@ -132,10 +170,11 @@ function initWorker (
             }
             case SqliteAction.CREATE_AGGREGATE: {
                 const db = await getOrCreateDb();
-                const indirectEval = eval;
-                const init = indirectEval("(" + data.init + ")");
-                const step = indirectEval("(" + data.step + ")");
-                const finalize = indirectEval("(" + data.finalize + ")");
+                //const indirectEval = eval;
+                //Actually, maybe we do want direct eval
+                const init = eval("(" + data.init + ")");
+                const step = eval("(" + data.step + ")");
+                const finalize = eval("(" + data.finalize + ")");
                 db.create_aggregate(
                     data.functionName,
                     init,

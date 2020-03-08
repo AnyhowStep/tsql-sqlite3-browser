@@ -384,6 +384,15 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
         return sqlite3_column_double(this.stmt, pos);
     };
 
+    Statement.prototype.getBigInt = function getBigInt(pos) {
+      if (pos == null) {
+          pos = this.pos;
+          this.pos += 1;
+      }
+      const text = sqlite3_column_text(this.stmt, pos);
+      return BigInt(text);
+    };
+
     Statement.prototype.getString = function getString(pos) {
         if (pos == null) {
             pos = this.pos;
@@ -435,6 +444,8 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
         while (field < ref) {
             switch (sqlite3_column_type(this.stmt, field)) {
                 case SQLITE_INTEGER:
+                    results1.push(this.getBigInt(field));
+                    break;
                 case SQLITE_FLOAT:
                     results1.push(this.getNumber(field));
                     break;
@@ -962,7 +973,282 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
         return sqlite3_changes(this.db);
     };
 
-    function setFunctionResult (cx, result) {
+    function isPolyfilledBigInt (x) {
+      const maybeBigIntCtor = BigInt(0).constructor;
+      return (x instanceof maybeBigIntCtor);
+    }
+
+    /**
+     *
+     * @param {string} decimalStr
+     */
+    function unsignedDecimalStrDiv2 (decimalStr) {
+      let next_additive = 0;
+      const digits = decimalStr.split("").map(digit => Number(digit));
+      for (let i=0; i<digits.length; ++i) {
+        const digit = digits[i];
+        let additive = next_additive;
+        next_additive = (digit % 2 == 0) ? 0 : 5;
+        digits[i] = Math.floor(digit/2) + additive;
+      }
+      while (digits[0] === 0) {
+        digits.shift();
+      }
+      if (digits.length == 0) {
+        return "0";
+      }
+      return digits.join("");
+    }
+
+    /**
+     *
+     * @param {string} decimalStr
+     */
+    function unsignedDecimalStrIsEven (decimalStr) {
+      switch (decimalStr[decimalStr.length-1]) {
+        case "0":
+        case "2":
+        case "4":
+        case "6":
+        case "8":
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    /**
+     *
+     * @param {string} decimalStr
+     */
+    function unsignedDecimalStrToBinaryStr (decimalStr) {
+      if (decimalStr == "0") {
+        return "0";
+      }
+
+      let result = "";
+      while (decimalStr != "0") {
+        result = (unsignedDecimalStrIsEven(decimalStr) ? "0" : "1") + result;
+        decimalStr = unsignedDecimalStrDiv2(decimalStr);
+      }
+      return result;
+    }
+
+    /**
+     *
+     * @param {string} decimalStr
+     */
+    function signedDecimalStrIsPositive (decimalStr) {
+      return decimalStr[0] != "-";
+    }
+
+    /**
+     *
+     * @param {string} decimalStr
+     */
+    function unsignedDecimalStrSubtractOne (decimalStr) {
+      const digits = decimalStr.split("").map(digit => Number(digit));
+      for (let i=digits.length-1; i>=0; --i) {
+        const digit = digits[i];
+        if (digit == 0) {
+          digits[i] = 9;
+        } else {
+          digits[i] = digit-1;
+          return digits.join("");
+        }
+      }
+      throw new Error(`Cannot perform 0-1`);
+    }
+
+    /**
+     *
+     * @param {string} binaryStr
+     */
+    function flipBinaryStr (binaryStr) {
+      return [...binaryStr].map(digit => digit == "0" ? "1" : "0").join("");
+    }
+
+    /**
+     *
+     * @param {string} decimalStr
+     */
+    function signedDecimalStrToBinaryStr (decimalStr) {
+      if (signedDecimalStrIsPositive(decimalStr)) {
+        //leading 0 for positive
+        return "0" + unsignedDecimalStrToBinaryStr(decimalStr);
+      } else {
+        const positiveDecimal = decimalStr.substr(1);
+        const twosComplement = unsignedDecimalStrSubtractOne(positiveDecimal);
+        const twosComplementBinary = unsignedDecimalStrToBinaryStr(twosComplement);
+        const flipped = flipBinaryStr(twosComplementBinary);
+        //leading 1 for negative
+        return "1" + flipped;
+      }
+    }
+
+    /**
+     *
+     * @param {string} a
+     * @param {string} b
+     */
+    function signedDecimalStrGreaterThanOrEqual (a, b) {
+      if (signedDecimalStrIsPositive(a)) {
+        if (signedDecimalStrIsPositive(b)) {
+          if (a.length > b.length) {
+            return true;
+          }
+          if (a.length < b.length) {
+            return false;
+          }
+          for (let i=0; i<a.length; ++i) {
+            if (Number(a[i]) > Number(b[i])) {
+              return true;
+            }
+            if (Number(a[i]) < Number(b[i])) {
+              return false;
+            }
+          }
+          return true;
+        } else {
+          //a > b
+          return true;
+        }
+      } else {
+        if (signedDecimalStrIsPositive(b)) {
+          //a < b
+          return false;
+        } else {
+          return signedDecimalStrGreaterThanOrEqual(
+            b.substr(1),
+            a.substr(1)
+          );
+        }
+      }
+    }
+
+    /**
+     *
+     * @param {string} a
+     * @param {string} b
+     */
+    function signedDecimalStrLessThanOrEqual (a, b) {
+      return signedDecimalStrGreaterThanOrEqual(b, a);
+    }
+
+    /**
+     *
+     * @param {string} a
+     * @param {number} b
+     */
+    function binaryStrSignedRightShift (a, b) {
+      const padStr = a[0];
+      const bits = a.substr(1);
+
+      if (bits.length <= b) {
+        return padStr + padStr.repeat(bits.length);
+      }
+
+      const leading = padStr.repeat(b);
+      const trailing = bits.substr(0, bits.length-b);
+      return padStr + leading + trailing;
+    }
+
+    /**
+     *
+     * @param {string} a
+     * @param {number} b
+     */
+    function binaryStrLeftShift (a, b) {
+      return a + "0".repeat(b);
+    }
+
+    /**
+     *
+     * @param {string} binaryStr
+     * @param {number} width
+     */
+    function binaryStrSetWidth (binaryStr, width) {
+      if (binaryStr.length == width) {
+        return binaryStr;
+      }
+      if (binaryStr.length > width) {
+        throw new Error(`Cannot truncate`);
+      }
+      const padStr = binaryStr[0];
+      const filler = padStr.repeat(width-binaryStr.length);
+      return padStr + filler + binaryStr.substr(1);
+    }
+
+    /**
+     *
+     * @param {string} a
+     * @param {string} b
+     */
+    function binaryStrXor (a, b) {
+      const maxWidth = Math.max(a.length, b.length);
+      a = binaryStrSetWidth(a, maxWidth);
+      b = binaryStrSetWidth(b, maxWidth);
+
+      let result = "";
+      for (let i=0; i<a.length; ++i) {
+        result.push(a[i] == b[i] ? "0" : "1");
+      }
+      return result;
+    }
+
+    /**
+     *
+     * @param {string} binaryStr
+     */
+    function binaryStrToNumber (binaryStr) {
+      if (binaryStr[0] == "1") {
+        return -(
+          binaryStrToNumber(binaryStr.substr(1)) +
+          1
+        );
+      }
+
+      return parseInt(binaryStr, 2);
+    }
+
+    const bigIntSignedMinDecimalStr = "-9223372036854775808";
+    const bigIntSignedMaxDecimalStr =  "9223372036854775807";
+
+    function setFunctionResult (name, cx, result) {
+      if (typeof result == "bigint") {
+        //native bigint supported
+        if (
+          result >= BigInt(bigIntSignedMinDecimalStr) &&
+          result <= BigInt(bigIntSignedMaxDecimalStr)
+        ) {
+          const leftPart = result >> BigInt(32);
+          const rightPart = (leftPart << BigInt(32)) ^ result;
+          sqlite3_result_int64(cx, Number(rightPart), Number(leftPart));
+        } else {
+          sqlite3_result_error(cx, "INTEGER value is out of range in "+name+"(); must be between -9223372036854775808 and 9223372036854775807 inclusive", -1);
+        }
+        return;
+      }
+
+      if (isPolyfilledBigInt(result)) {
+        const decimalStr = result.toString();
+        if (
+          signedDecimalStrGreaterThanOrEqual(decimalStr, bigIntSignedMinDecimalStr) &&
+          signedDecimalStrLessThanOrEqual(decimalStr, bigIntSignedMaxDecimalStr)
+        ) {
+          const binaryStr = signedDecimalStrToBinaryStr(decimalStr);
+          const leftPart = binaryStrSignedRightShift(binaryStr, 32);
+          const rightPart = binaryStrXor(
+            binaryStrLeftShift(leftPart, 32),
+            binaryStr
+          );
+          sqlite3_result_int64(cx, binaryStrToNumber(rightPart), binaryStrToNumber(leftPart));
+        } else {
+          sqlite3_result_error(cx, "INTEGER value is out of range in "+name+"(); must be between -9223372036854775808 and 9223372036854775807 inclusive", -1);
+        }
+        return;
+      }
+
       switch (typeof result) {
         case "boolean":
             sqlite3_result_int(cx, result ? 1 : 0);
@@ -1005,7 +1291,9 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
           var value_ptr = getValue(argv + (4 * i), "i32");
           var value_type = sqlite3_value_type(value_ptr);
           var arg;
-          if (value_type === SQLITE_INTEGER || value_type === SQLITE_FLOAT) {
+          if (value_type === SQLITE_INTEGER) {
+              arg = BigInt(sqlite3_value_text(value_ptr));
+          } else if (value_type === SQLITE_FLOAT) {
               arg = sqlite3_value_double(value_ptr);
           } else if (value_type === SQLITE_TEXT) {
               arg = sqlite3_value_text(value_ptr);
@@ -1045,7 +1333,7 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
         function wrapped_func(cx, argc, argv) {
             var args = parseFunctionArguments(argc, argv);
             var result = invokeWithFunctionArguments(cx, func, args);
-            setFunctionResult(cx, result);
+            setFunctionResult(name, cx, result);
         }
         if (Object.prototype.hasOwnProperty.call(this.functions, name)) {
             removeFunction(this.functions[name]);
@@ -1088,7 +1376,7 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
         };
         const wrapped_finalize = function (cx) {
           const result = invokeWithFunctionArguments(cx, finalize, [state]);
-          setFunctionResult(cx, result);
+          setFunctionResult(name, cx, result);
           state = undefined;
         }
 
