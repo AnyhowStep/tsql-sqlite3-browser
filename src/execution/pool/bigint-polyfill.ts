@@ -17,6 +17,7 @@ const {
 const {
     signedDecimalStrLessThanOrEqual,
     signedDecimalStrGreaterThanOrEqual,
+    signedDecimalStrUnaryMinus,
     signedDecimalStrAdd,
     signedDecimalStrSubtract,
     signedDecimalStrMultiply,
@@ -49,6 +50,7 @@ export async function initBigIntPolyfill (
 
     await connection.createGlobalJsFunction("signedDecimalStrLessThanOrEqual", signedDecimalStrLessThanOrEqual);
     await connection.createGlobalJsFunction("signedDecimalStrGreaterThanOrEqual", signedDecimalStrGreaterThanOrEqual);
+    await connection.createGlobalJsFunction("signedDecimalStrUnaryMinus", signedDecimalStrUnaryMinus);
     await connection.createGlobalJsFunction("signedDecimalStrAdd", signedDecimalStrAdd);
     await connection.createGlobalJsFunction("signedDecimalStrSubtract", signedDecimalStrSubtract);
     await connection.createGlobalJsFunction("signedDecimalStrMultiply", signedDecimalStrMultiply);

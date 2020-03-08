@@ -14,7 +14,12 @@ const myWorker = new worker.Worker(
 const sqlite3Worker = new w.SqliteWorker({
     postMessage : myWorker.postMessage.bind(myWorker),
     setOnMessage : (onMessage) => {
-        myWorker.on("message", onMessage);
+        myWorker.on("message", (data) => {
+            onMessage(data);
+            if (data.action == sqlite3.SqliteAction.CLOSE) {
+                myWorker.terminate();
+            }
+        });
     },
 });
 

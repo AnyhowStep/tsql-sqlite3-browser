@@ -64,6 +64,13 @@ export function signedDecimalStrLessThanOrEqual (a : string, b : string) {
     return signedDecimalStrGreaterThanOrEqual(b, a);
 }
 
+export function signedDecimalStrUnaryMinus (a : string) : string {
+    if (a == "0") {
+        return a;
+    }
+    const aNegative = a[0] == "-";
+    return aNegative ? a.substr(1) : ("-" + a)
+}
 
 export function signedDecimalStrSubtract (a : string, b : string) : string {
     if (a == b) {
@@ -77,7 +84,7 @@ export function signedDecimalStrSubtract (a : string, b : string) : string {
 
     if (a[0] == "-") {
         //negative - b = -((-negative) + b)
-        return "-" + signedDecimalStrAdd(a.substr(1), b);
+        return signedDecimalStrUnaryMinus(signedDecimalStrAdd(a.substr(1), b));
     }
 
     if (signedDecimalStrGreaterThanOrEqual(a, b)) {
@@ -85,7 +92,7 @@ export function signedDecimalStrSubtract (a : string, b : string) : string {
         return unsignedDecimalStrSubtract(a, b);
     } else {
         //a < b
-        return "-" + signedDecimalStrSubtract(b, a);
+        return signedDecimalStrUnaryMinus(signedDecimalStrSubtract(b, a));
     }
 }
 
@@ -103,7 +110,7 @@ export function signedDecimalStrAdd (a : string, b : string) : string {
             return "0";
         } else if (signedDecimalStrGreaterThanOrEqual(absA, b)) {
             //x > b
-            return "-" + signedDecimalStrSubtract(absA, b);
+            return signedDecimalStrUnaryMinus(signedDecimalStrSubtract(absA, b));
         } else {
             //x < b
             return signedDecimalStrSubtract(b, absA);
@@ -125,7 +132,7 @@ export function signedDecimalStrMultiply (a : string, b : string) : string {
     if (aNegative == bNegative) {
         return absMul;
     } else {
-        return "-" + absMul;
+        return signedDecimalStrUnaryMinus(absMul);
     }
 }
 
@@ -141,6 +148,6 @@ export function signedDecimalStrDivide (a : string, b : string) : string {
     if (aNegative == bNegative) {
         return absDiv;
     } else {
-        return "-" + absDiv;
+        return signedDecimalStrUnaryMinus(absDiv);
     }
 }
