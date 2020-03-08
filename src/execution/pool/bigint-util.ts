@@ -5,6 +5,7 @@ const {
     signedDecimalStrGreaterThanOrEqual,
     signedDecimalStrAdd,
     signedDecimalStrSubtract,
+    signedDecimalStrMultiply,
 } = SignedDecimalStrUtil;
 
 export function isSafeBigIntSigned (x : bigint|string) {
@@ -68,6 +69,18 @@ export function bigIntUnaryMinus (a : bigint) {
         "-" + str
     );
 
+    assertSafeBigIntSigned(result);
+    return BigInt(result);
+}
+
+export function bigIntMultiply (a : bigint, b : bigint) {
+    if (typeof a == "bigint" && typeof b == "bigint") {
+        const result = a * b;
+        assertSafeBigIntSigned(result);
+        return result;
+    }
+
+    const result = signedDecimalStrMultiply(a.toString(), b.toString());
     assertSafeBigIntSigned(result);
     return BigInt(result);
 }

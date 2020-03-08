@@ -4,8 +4,10 @@ import * as SignedDecimalStrUtil from "./signed-decimal-str-util";
 import * as BigIntUtil from "./bigint-util";
 
 const {
+    unsignedDigitArrayAdd,
     unsignedDecimalStrAdd,
     unsignedDecimalStrSubtract,
+    unsignedDecimalStrMultiply,
 } = UnsignedDecimalStrUtil;
 
 const {
@@ -13,6 +15,7 @@ const {
     signedDecimalStrGreaterThanOrEqual,
     signedDecimalStrAdd,
     signedDecimalStrSubtract,
+    signedDecimalStrMultiply,
 } = SignedDecimalStrUtil;
 
 const {
@@ -21,6 +24,7 @@ const {
     bigIntAdd,
     bigIntSubtract,
     bigIntUnaryMinus,
+    bigIntMultiply,
 } = BigIntUtil;
 
 declare const isBigInt : (x : unknown) => x is bigint;
@@ -28,19 +32,23 @@ declare const isBigInt : (x : unknown) => x is bigint;
 export async function initBigIntPolyfill (
     connection : Connection
 ) {
+    await connection.createGlobalJsFunction("unsignedDigitArrayAdd", unsignedDigitArrayAdd);
     await connection.createGlobalJsFunction("unsignedDecimalStrAdd", unsignedDecimalStrAdd);
     await connection.createGlobalJsFunction("unsignedDecimalStrSubtract", unsignedDecimalStrSubtract);
+    await connection.createGlobalJsFunction("unsignedDecimalStrMultiply", unsignedDecimalStrMultiply);
 
     await connection.createGlobalJsFunction("signedDecimalStrLessThanOrEqual", signedDecimalStrLessThanOrEqual);
     await connection.createGlobalJsFunction("signedDecimalStrGreaterThanOrEqual", signedDecimalStrGreaterThanOrEqual);
     await connection.createGlobalJsFunction("signedDecimalStrAdd", signedDecimalStrAdd);
     await connection.createGlobalJsFunction("signedDecimalStrSubtract", signedDecimalStrSubtract);
+    await connection.createGlobalJsFunction("signedDecimalStrMultiply", signedDecimalStrMultiply);
 
     await connection.createGlobalJsFunction("isSafeBigIntSigned", isSafeBigIntSigned);
     await connection.createGlobalJsFunction("assertSafeBigIntSigned", assertSafeBigIntSigned);
     await connection.createGlobalJsFunction("bigIntAdd", bigIntAdd);
     await connection.createGlobalJsFunction("bigIntSubtract", bigIntSubtract);
     await connection.createGlobalJsFunction("bigIntUnaryMinus", bigIntUnaryMinus);
+    await connection.createGlobalJsFunction("bigIntMultiply", bigIntMultiply);
 
     await connection.createVarArgFunction("bigint_add", (...arr) => {
         if (arr.length == 0) {
@@ -80,24 +88,34 @@ export async function initBigIntPolyfill (
         return bigIntSubtract(a, b);
     });
     await connection.createVarArgFunction("bigint_mul", (...arr) => {
-        return BigInt(arr.reduce<number>(
-            (result, x) => result * Number(x),
-            1
-        ));
-        /*
-        if (isBigInt(a) && isBigInt(b)) {
-            const result = tm.BigIntUtil.mul(a, b);
-            if (tm.BigIntUtil.lessThan(result, tm.BigInt("-9223372036854775808"))) {
-                throw new Error(`DataOutOfRangeError: bigint_mul result was ${String(result)}`);
-            }
-            if (tm.BigIntUtil.greaterThan(result, tm.BigInt("9223372036854775807"))) {
-                throw new Error(`DataOutOfRangeError: bigint_mul result was ${String(result)}`);
-            }
-            return result;
-        } else {
-            throw new Error(`Can only mul two bigint values`);
+        if (arr.length == 0) {
+            return BigInt(1);
         }
-        */
+        if (arr.length == 1) {
+            const a = arr[0];
+            if (isBigInt(a)) {
+                return a;
+            } else {
+                throw new Error(`Cannot multiply non-bigint`);
+            }
+        }
+        const [a, b, ...rest] = arr;
+
+        if (!isBigInt(a) || !isBigInt(b)) {
+            throw new Error(`Cannot multiply non-bigint`);
+        }
+
+        const product = bigIntMultiply(a, b);
+
+        return rest.reduce<bigint>(
+            (result, x) => {
+                if (!isBigInt(x)) {
+                    throw new Error(`Cannot multiply non-bigint`);
+                }
+                return bigIntMultiply(result, x);
+            },
+            product
+        );
     });
     await connection.createFunction("bigint_neg", (a) => {
         if (!isBigInt(a)) {

@@ -1,6 +1,10 @@
 import * as UnsignedDecimalStrUtil from "./unsigned-decimal-str-util";
 
-const {unsignedDecimalStrAdd, unsignedDecimalStrSubtract} = UnsignedDecimalStrUtil;
+const {
+    unsignedDecimalStrAdd,
+    unsignedDecimalStrSubtract,
+    unsignedDecimalStrMultiply,
+} = UnsignedDecimalStrUtil;
 
 /**
  *
@@ -106,4 +110,20 @@ export function signedDecimalStrAdd (a : string, b : string) : string {
     }
 
     return unsignedDecimalStrAdd(a, b);
+}
+
+export function signedDecimalStrMultiply (a : string, b : string) : string {
+    const aNegative = a[0] == "-";
+    const bNegative = b[0] == "-";
+
+    const absMul = unsignedDecimalStrMultiply(
+        aNegative ? a.substr(1) : a,
+        bNegative ? b.substr(1) : b
+    );
+
+    if (aNegative == bNegative) {
+        return absMul;
+    } else {
+        return "-" + absMul;
+    }
 }
