@@ -14,10 +14,10 @@ tape.createStream({ objectMode : true }).on("data", (row) => {
         }
         ++failCount;
         failures.push(row);
-        if (failCount >= 10) {
+        /*if (failCount >= 10) {
             console.error("Too many failures");
             process.exit(1);
-        }
+        }*/
     }
     if (row.type === "assert") {
         ++assertCount;

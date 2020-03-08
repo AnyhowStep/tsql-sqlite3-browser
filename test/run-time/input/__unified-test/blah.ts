@@ -96,4 +96,15 @@ pool.acquire(async (connection) => {
         .then((result) => {
             console.log(result);
         });
+
+    await T
+        .where(() => true)
+        .fetchValue(
+            connection,
+            () => 1.7976931348623157e+308
+        )
+        .then((result) => {
+            console.log(result, 1.7976931348623157e+308);
+        });
+
 });

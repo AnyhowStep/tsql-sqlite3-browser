@@ -1743,8 +1743,9 @@ export const sqlfier : squill.Sqlfier = {
                         [
                             [
                                 "DISTINCT",
+                                //@todo
                                 squill.functionCall("CAST", [
-                                    [expr, "AS NUMERIC"]
+                                    [expr, "AS REAL"]
                                 ])
                             ]
                         ]
@@ -1753,8 +1754,9 @@ export const sqlfier : squill.Sqlfier = {
                     return squill.functionCall(
                         "SUM",
                         [
+                            //@todo
                             squill.functionCall("CAST", [
-                                [expr, "AS NUMERIC"]
+                                [expr, "AS REAL"]
                             ])
                         ]
                     );

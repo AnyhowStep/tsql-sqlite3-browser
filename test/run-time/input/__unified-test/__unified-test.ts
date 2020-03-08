@@ -1,20 +1,20 @@
 import * as tape from "tape";
-import * as tsql from "@squill/squill";
 import {unifiedTest, UnifiedSchema} from "@squill/squill/unified-test";
-import * as mysql from "../../../../dist";
-import {TypedEnv} from "@anyhowstep/typed-env";
+import * as tsql from "@squill/squill";
+import * as sqlite3 from "../../../../dist";
+import * as w from "../../../../dist/worker/worker-impl.sql";
+import * as worker from "worker_threads";
 
-if (process.env.ENV_FILE != undefined) {
-    TypedEnv.Load(process.env.ENV_FILE);
-}
+const myWorker = new worker.Worker(`${__dirname}/../../../../dist/worker/node-worker.js`);
 
-const pool = new mysql.Pool({
-    host      : TypedEnv.GetStringOrError("MYSQL_HOST"),
-    database  : TypedEnv.GetStringOrError("MYSQL_DATABASE"),
-    user      : TypedEnv.GetStringOrError("MYSQL_USERNAME"),
-    password  : TypedEnv.GetStringOrError("MYSQL_PASSWORD"),
-    charset   : mysql.CharSet.utf8mb4,
+const sqlite3Worker = new w.SqliteWorker({
+    postMessage : myWorker.postMessage.bind(myWorker),
+    setOnMessage : (onMessage) => {
+        myWorker.on("message", onMessage);
+    },
 });
+
+const pool = new sqlite3.Pool(sqlite3Worker);
 
 /*
 pool.acquire(async (connection) => {
@@ -36,16 +36,28 @@ unifiedTest({
     ) : Promise<void> => {
         for (const table of schema.tables) {
             const tableSql : string[] = [
-                `CREATE TEMPORARY TABLE ${tsql.escapeIdentifierWithBackticks(table.tableAlias)} (`
+                `CREATE TABLE ${tsql.escapeIdentifierWithDoubleQuotes(table.tableAlias)} (`
             ];
 
             let firstColumn = true;
             for (const column of table.columns) {
-                const columnSql : string[] = [tsql.escapeIdentifierWithBackticks(column.columnAlias)];
+                const columnSql : string[] = [tsql.escapeIdentifierWithDoubleQuotes(column.columnAlias)];
 
                 switch (column.dataType.typeHint) {
                     case tsql.TypeHint.BIGINT_SIGNED: {
-                        columnSql.push("BIGINT SIGNED");
+                        /**
+                         * `INT` and `INTEGER` mean different things in SQLite
+                         */
+                        if (
+                            table.primaryKey != undefined &&
+                            !table.primaryKey.multiColumn &&
+                            table.primaryKey.autoIncrement &&
+                            table.primaryKey.columnAlias == column.columnAlias
+                        ) {
+                            columnSql.push("INTEGER");
+                        } else {
+                            columnSql.push("INT");
+                        }
                         break;
                     }
                     case tsql.TypeHint.BOOLEAN: {
@@ -53,7 +65,7 @@ unifiedTest({
                         break;
                     }
                     case tsql.TypeHint.BUFFER: {
-                        columnSql.push("VARBINARY(256)");
+                        columnSql.push("BLOB");
                         break;
                     }
                     case tsql.TypeHint.DATE_TIME: {
@@ -61,7 +73,14 @@ unifiedTest({
                         break;
                     }
                     case tsql.TypeHint.DECIMAL: {
-                        columnSql.push(`DECIMAL(${column.dataType.precision}, ${column.dataType.scale})`);
+                        /**
+                         * Using numeric will cause SQLite to cast DECIMAL strings
+                         * into `double` and lose precision, when stored on disk.
+                         *
+                         * @todo Document this, when implementing "emulated DECIMAL" support proper.
+                         */
+                        //columnSql.push("NUMERIC");
+                        columnSql.push("TEXT");
                         break;
                     }
                     case tsql.TypeHint.DOUBLE: {
@@ -69,7 +88,7 @@ unifiedTest({
                         break;
                     }
                     case tsql.TypeHint.STRING: {
-                        columnSql.push("VARCHAR(256)");
+                        columnSql.push("TEXT");
                         break;
                     }
                 }
@@ -78,22 +97,13 @@ unifiedTest({
                     columnSql.push("NOT NULL");
                 }
 
-                if (column.nullable === true && table.primaryKey != undefined) {
-                    const columnAliases = table.primaryKey.multiColumn ?
-                        table.primaryKey.columnAliases :
-                        [table.primaryKey.columnAlias];
-                    if (columnAliases.includes(column.columnAlias)) {
-                        throw new Error(`Primary key column ${column.columnAlias} cannot be nullable`);
-                    }
-                }
-
                 if (
                     table.primaryKey != undefined &&
                     !table.primaryKey.multiColumn &&
                     table.primaryKey.columnAlias == column.columnAlias
                 ) {
                     if (table.primaryKey.autoIncrement) {
-                        columnSql.push("PRIMARY KEY AUTO_INCREMENT");
+                        columnSql.push("PRIMARY KEY AUTOINCREMENT");
                     } else {
                         columnSql.push("PRIMARY KEY");
                     }
@@ -103,7 +113,7 @@ unifiedTest({
                     columnSql.push("DEFAULT");
                     columnSql.push(tsql.AstUtil.toSql(
                         tsql.BuiltInExprUtil.buildAst(column.default),
-                        mysql.sqlfier
+                        sqlite3.sqlfier
                     ));
                 }
 
@@ -120,7 +130,7 @@ unifiedTest({
             ) {
                 const columnAliases = table.primaryKey.columnAliases
                     .map(columnAlias => {
-                        return tsql.escapeIdentifierWithBackticks(columnAlias);
+                        return tsql.escapeIdentifierWithDoubleQuotes(columnAlias);
                     })
                     .join(", ");
                 tableSql.push(`, PRIMARY KEY (${columnAliases})`);
@@ -129,7 +139,7 @@ unifiedTest({
             if (table.candidateKeys != undefined) {
                 for (const candidateKey of table.candidateKeys) {
                     const keyStr = candidateKey
-                        .map(columnAlias => tsql.escapeIdentifierWithBackticks(columnAlias))
+                        .map(columnAlias => tsql.escapeIdentifierWithDoubleQuotes(columnAlias))
                         .join(", ");
                     tableSql.push(`, UNIQUE(${keyStr})`);
                 }
@@ -137,7 +147,7 @@ unifiedTest({
 
             tableSql.push(");");
 
-            await connection.rawQuery(`DROP TEMPORARY TABLE IF EXISTS ${tsql.escapeIdentifierWithBackticks(table.tableAlias)};`);
+            await connection.rawQuery(`DROP TABLE IF EXISTS ${tsql.escapeIdentifierWithDoubleQuotes(table.tableAlias)}`);
             await connection.rawQuery(tableSql.join(" "));
         }
     },

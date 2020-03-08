@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "ts-node -P ./test/run-time/tsconfig.json -r ./test/run-time/tape-stream.ts -r ./test/run-time/bluebird-promise.ts",
-    "build-node-worker": "cat ./dist/worker/node-worker-pre.js ./src/sql-wasm/sql-wasm-debug.js ./dist/worker/browser-worker-body.js  ./dist/worker/node-worker-post.js > ./dist/worker/node-worker.js",
+    "build-node-worker": "cat ./dist/worker/node-worker-pre.js ./dist/worker/base-64-polyfill.js ./src/sql-wasm/sql-wasm-debug.js ./dist/worker/browser-worker-body.js  ./dist/worker/node-worker-post.js > ./dist/worker/node-worker.js",
     "build": "(tsc) && (cp -r ./src/sql-wasm/sql-wasm-debug.wasm ./dist/worker/sql-wasm-debug.wasm) && (npm run build-node-worker)"
   },
   "author": "",
