@@ -18,3 +18,29 @@ pool.acquire(connection => squill.selectValue(() => squill.currentTimestamp0())
 ).then((result) => {
     console.log(result);
 });
+
+pool.acquire(async (connection) => {
+    await connection.exec(`
+        CREATE TABLE T (x DOUBLE);
+    `);
+    const T = squill.table("T")
+        .addColumns({
+            x : squill.dtDouble(),
+        });
+    await T.insertMany(
+        connection,
+        [
+            { x : 1 },
+            { x : 2 },
+            { x : 3 },
+        ]
+    );
+    return T
+        .where(() => true)
+        .fetchValue(
+            connection,
+            columns => squill.double.stdDevPop(columns.x)
+        );
+}).then((result) => {
+    console.log(result);
+});
