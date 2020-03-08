@@ -6,6 +6,7 @@ const {
     signedDecimalStrAdd,
     signedDecimalStrSubtract,
     signedDecimalStrMultiply,
+    signedDecimalStrDivide,
 } = SignedDecimalStrUtil;
 
 export function isSafeBigIntSigned (x : bigint|string) {
@@ -81,6 +82,21 @@ export function bigIntMultiply (a : bigint, b : bigint) {
     }
 
     const result = signedDecimalStrMultiply(a.toString(), b.toString());
+    assertSafeBigIntSigned(result);
+    return BigInt(result);
+}
+
+export function bigIntDivide (a : bigint, b : bigint) {
+    if (typeof a == "bigint" && typeof b == "bigint") {
+        if (b == BigInt(0)) {
+            throw new Error(`DivideByZeroError: Cannot divide by zero`);
+        }
+        const result = a / b;
+        assertSafeBigIntSigned(result);
+        return result;
+    }
+
+    const result = signedDecimalStrDivide(a.toString(), b.toString());
     assertSafeBigIntSigned(result);
     return BigInt(result);
 }

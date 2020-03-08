@@ -4,6 +4,7 @@ const {
     unsignedDecimalStrAdd,
     unsignedDecimalStrSubtract,
     unsignedDecimalStrMultiply,
+    unsignedDecimalStrDivide,
 } = UnsignedDecimalStrUtil;
 
 /**
@@ -125,5 +126,21 @@ export function signedDecimalStrMultiply (a : string, b : string) : string {
         return absMul;
     } else {
         return "-" + absMul;
+    }
+}
+
+export function signedDecimalStrDivide (a : string, b : string) : string {
+    const aNegative = a[0] == "-";
+    const bNegative = b[0] == "-";
+
+    const absDiv = unsignedDecimalStrDivide(
+        aNegative ? a.substr(1) : a,
+        bNegative ? b.substr(1) : b
+    );
+
+    if (aNegative == bNegative) {
+        return absDiv;
+    } else {
+        return "-" + absDiv;
     }
 }
