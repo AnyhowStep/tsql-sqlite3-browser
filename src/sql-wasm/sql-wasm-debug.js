@@ -217,24 +217,33 @@ function binaryStrXor (a, b) {
 
   let result = "";
   for (let i=0; i<a.length; ++i) {
-    result.push(a[i] == b[i] ? "0" : "1");
+    result += (a[i] == b[i] ? "0" : "1");
   }
   return result;
 }
 
 /**
+ * We don't use `parseInt(x, 2)` because `parseInt()`
+ * only handles 32 bits at most and is wonky with negative numbers.
  *
  * @param {string} binaryStr
  */
 function binaryStrToNumber (binaryStr) {
   if (binaryStr[0] == "1") {
     return -(
-      binaryStrToNumber(binaryStr.substr(1)) +
+      binaryStrToNumber("0" + flipBinaryStr(binaryStr.substr(1))) +
       1
     );
   }
 
-  return parseInt(binaryStr, 2);
+  let result = 0;
+  for (let i=0; i<binaryStr.length; ++i) {
+    if (binaryStr[binaryStr.length-i-1] == "0") {
+      continue;
+    }
+    result += Math.pow(2, i);
+  }
+  return result;
 }
 
 const bigIntSignedMinDecimalStr = "-9223372036854775808";
@@ -1255,13 +1264,28 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
           signedDecimalStrGreaterThanOrEqual(decimalStr, bigIntSignedMinDecimalStr) &&
           signedDecimalStrLessThanOrEqual(decimalStr, bigIntSignedMaxDecimalStr)
         ) {
-          const binaryStr = signedDecimalStrToBinaryStr(decimalStr);
+          const binaryStr = binaryStrSetWidth(signedDecimalStrToBinaryStr(decimalStr), 64);
           const leftPart = binaryStrSignedRightShift(binaryStr, 32);
           const rightPart = binaryStrXor(
             binaryStrLeftShift(leftPart, 32),
             binaryStr
           );
-          sqlite3_result_int64(cx, binaryStrToNumber(rightPart), binaryStrToNumber(leftPart));
+          /*
+          console.log(
+            "polyfill result int64",
+            decimalStr,
+            binaryStr,
+            leftPart,
+            rightPart,
+            binaryStrToNumber(leftPart),
+            binaryStrToNumber(rightPart),
+          );
+          //*/
+          sqlite3_result_int64(
+            cx,
+            binaryStrToNumber(rightPart),
+            binaryStrToNumber(leftPart)
+          );
         } else {
           sqlite3_result_error(cx, "INTEGER value is out of range in "+name+"(); must be between -9223372036854775808 and 9223372036854775807 inclusive", -1);
         }

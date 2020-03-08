@@ -8,3 +8,6 @@ const postMessage = (response : unknown) => {
 };
 //@ts-ignore
 let onmessage;
+
+//@ts-ignore
+let forceBigIntPolyfill = false;

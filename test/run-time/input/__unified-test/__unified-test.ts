@@ -5,7 +5,11 @@ import * as sqlite3 from "../../../../dist";
 import * as w from "../../../../dist/worker/worker-impl.sql";
 import * as worker from "worker_threads";
 
-const myWorker = new worker.Worker(`${__dirname}/../../../../dist/worker/node-worker.js`);
+const myWorker = new worker.Worker(
+    typeof BigInt(0) == "bigint" ?
+    `${__dirname}/../../../../dist/worker/node-worker.js` :
+    `${__dirname}/../../../../dist/worker/node-worker-force-bigint-polyfill.js`
+);
 
 const sqlite3Worker = new w.SqliteWorker({
     postMessage : myWorker.postMessage.bind(myWorker),

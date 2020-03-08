@@ -64,6 +64,9 @@ export function bigIntUnaryMinus (a : bigint) {
     }
 
     const str = String(a);
+    if (str == "0") {
+        return BigInt("0");
+    }
     const result = (
         str[0] == "-" ?
         str.substr(1) :

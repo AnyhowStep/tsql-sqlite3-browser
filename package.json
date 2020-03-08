@@ -5,8 +5,15 @@
   "main": "index.js",
   "scripts": {
     "test": "ts-node -P ./test/run-time/tsconfig.json -r ./test/run-time/tape-stream.ts -r ./test/run-time/bluebird-promise.ts",
+    "clean": "rm -r ./dist || true",
     "build-node-worker": "cat ./dist/worker/node-worker-pre.js ./dist/worker/base-64-polyfill.js ./src/sql-wasm/sql-wasm-debug.js ./dist/worker/browser-worker-body.js  ./dist/worker/node-worker-post.js > ./dist/worker/node-worker.js",
-    "build": "(tsc) && (cp -r ./src/sql-wasm/sql-wasm-debug.wasm ./dist/worker/sql-wasm-debug.wasm) && (npm run build-node-worker)"
+    "build-node-worker-force-bigint-polyfill": "cat ./dist/worker/node-worker-pre.js ./dist/worker/node-worker-pre-force-bigint-polyfill.js ./dist/worker/base-64-polyfill.js ./src/sql-wasm/sql-wasm-debug.js ./dist/worker/browser-worker-body.js  ./dist/worker/node-worker-post.js > ./dist/worker/node-worker-force-bigint-polyfill.js",
+    "build": "(tsc) && (cp -r ./src/sql-wasm/sql-wasm-debug.wasm ./dist/worker/sql-wasm-debug.wasm) && (npm run build-node-worker) && (npm run build-node-worker-force-bigint-polyfill)",
+    "rebuild": "(npm run clean) && (npm run build)",
+    "test-run-time": "node --max_old_space_size=8192 ./node_modules/.bin/ts-node -P ./test/run-time/tsconfig.json -r ./test/run-time/tape-stream.ts -r ./test/run-time/bluebird-promise.ts ./test/run-time/runner.ts",
+    "test-run-time-bigint-polyfill": "node --max_old_space_size=8192 ./node_modules/.bin/ts-node -P ./test/run-time/tsconfig.json -r ./test/run-time/tape-stream.ts -r ./test/run-time/bigint-polyfill.ts -r ./test/run-time/bluebird-promise.ts ./test/run-time/runner.ts",
+    "sanity-check": "(npm run rebuild) && (c8 --reporter=html npm run test-run-time) && (npm run test-run-time-bigint-polyfill)",
+    "sanity-check-travis": "(npm run rebuild) && (c8 --reporter=html npm run test-run-time) && (npm run test-run-time-bigint-polyfill)"
   },
   "author": "",
   "license": "ISC",

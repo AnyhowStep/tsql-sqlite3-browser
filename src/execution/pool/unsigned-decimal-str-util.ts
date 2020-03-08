@@ -160,10 +160,6 @@ export function unsignedDigitArrayLessThanOrEqual (numA : number[], numB : numbe
 }
 
 export function unsignedDecimalStrDivide (a : string, b : string) : string {
-    if (a == "0") {
-        return "0";
-    }
-
     if (b == "0") {
         throw new Error(`DivideByZeroError: Cannot divide by zero`);
     }
@@ -171,6 +167,11 @@ export function unsignedDecimalStrDivide (a : string, b : string) : string {
     if (b == "1") {
         return a;
     }
+
+    if (a == "0") {
+        return "0";
+    }
+
 
     const numA = a.toString().split("").map(Number);
     const numB = b.toString().split("").map(Number);
@@ -184,6 +185,7 @@ export function unsignedDecimalStrDivide (a : string, b : string) : string {
             remainder.shift();
         }
         if (remainder.length < numB.length) {
+            quotient.push(0);
             continue;
         }
         let tmp = [0];
@@ -199,6 +201,7 @@ export function unsignedDecimalStrDivide (a : string, b : string) : string {
         }
 
         if (q == 0) {
+            quotient.push(0);
             continue;
         }
 
@@ -207,6 +210,10 @@ export function unsignedDecimalStrDivide (a : string, b : string) : string {
             remainder,
             tmp
         );
+    }
+
+    while (quotient[0] == 0 && quotient.length >= 2) {
+        quotient.shift();
     }
 
     return quotient.join("");

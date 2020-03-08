@@ -1,6 +1,7 @@
 declare let onmessage : (event : unknown) => void;
 declare let postMessage : (workerResult : unknown) => void;
 declare let initSqlJs : typeof import("../sql-wasm/sql-wasm-debug").default;
+declare let forceBigIntPolyfill : boolean;
 
 import * as sqljs from "../sql-wasm/sql-wasm-debug";
 import {FromSqliteMessage, ToSqliteMessage, SqliteAction} from "./worker.sql";
@@ -15,7 +16,7 @@ class MyBigIntPolyfill {
     }
 }
 let bigIntPolyfilled = false;
-if (typeof BigInt === undefined) {
+if (typeof BigInt === undefined || forceBigIntPolyfill) {
     bigIntPolyfilled = true;
     BigInt = (
         (x : any) => new MyBigIntPolyfill(x) as unknown as bigint
