@@ -2,7 +2,12 @@
   "name": "@squill/sqlite3-browser",
   "version": "0.0.0",
   "description": "A SQLite3 query-builder/ORM",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "test": "ts-node -P ./test/run-time/tsconfig.json -r ./test/run-time/tape-stream.ts -r ./test/run-time/bluebird-promise.ts",
     "clean": "rm -r ./dist || true",
@@ -15,8 +20,16 @@
     "sanity-check": "(npm run rebuild) && (c8 --reporter=html npm run test-run-time) && (npm run test-run-time-bigint-polyfill)",
     "sanity-check-travis": "(npm run rebuild) && (c8 --reporter=html npm run test-run-time) && (npm run test-run-time-bigint-polyfill)"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AnyhowStep/tsql-sqlite3-browser"
+  },
+  "author": "anyhowstep",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AnyhowStep/tsql-sqlite3-browser/issues"
+  },
+  "homepage": "https://github.com/AnyhowStep/tsql-sqlite3-browser#readme",
   "devDependencies": {
     "@types/bluebird": "^3.5.30",
     "@types/node": "^13.9.0",

@@ -2,7 +2,6 @@ import * as tape from "tape";
 import {unifiedTest, UnifiedSchema} from "@squill/squill/unified-test";
 import * as tsql from "@squill/squill";
 import * as sqlite3 from "../../../../dist";
-import * as w from "../../../../dist/worker/worker-impl.sql";
 import * as worker from "worker_threads";
 
 const myWorker = new worker.Worker(
@@ -11,7 +10,7 @@ const myWorker = new worker.Worker(
     `${__dirname}/../../../../dist/worker/node-worker-force-bigint-polyfill.js`
 );
 
-const sqlite3Worker = new w.SqliteWorker({
+const sqlite3Worker = new sqlite3.SqliteWorker({
     postMessage : myWorker.postMessage.bind(myWorker),
     setOnMessage : (onMessage) => {
         myWorker.on("message", (data) => {
