@@ -1,4 +1,5 @@
 import {Connection} from "../connection";
+import {initDecimalPolyfill} from "./decimal-polyfill";
 
 declare const isBigInt : (x : unknown) => x is bigint;
 
@@ -11,6 +12,7 @@ declare function binaryStrSetWidth (binaryStr : string, width : number) : string
 export async function initPolyfill (
     connection : Connection
 ) {
+    await initDecimalPolyfill(connection);
     /**
      * @todo Use `createVarArgFunction()`
      */
@@ -107,24 +109,6 @@ export async function initPolyfill (
             throw new Error(`Can only div two bigint values`);
         }
         */
-    });
-    await connection.createFunction("decimal_ctor", (x, precision, scale) => {
-        if (
-            isBigInt(precision) &&
-            isBigInt(scale)
-        ) {
-            if (typeof x == "string") {
-                return Number(x).toString();
-                /*
-                const parsed = tm.mysql.decimal(precision, scale)("rawDecimal", x);
-                return parsed.toString();
-                */
-            } else {
-                throw new Error(`Only string to decimal cast implemented`);
-            }
-        } else {
-            throw new Error(`Precision and scale must be bigint`);
-        }
     });
     await connection.createFunction("ASCII", (x) => {
         if (typeof x == "string") {

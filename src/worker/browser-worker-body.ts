@@ -114,6 +114,16 @@ function initWorker (
                 });
                 return;
             }
+            case SqliteAction.CREATE_GLOBAL_JS_FUNCTION: {
+                //We want direct eval
+                const impl = eval("(" + data.impl + ")");
+                (getGlobal() as any)[data.functionName] = impl;
+                postMessage({
+                    id : data.id,
+                    action : data.action,
+                });
+                return;
+            }
             case SqliteAction.CREATE_FUNCTION: {
                 const db = await getOrCreateDb();
                 /**

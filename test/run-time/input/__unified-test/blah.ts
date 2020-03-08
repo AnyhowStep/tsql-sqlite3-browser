@@ -97,12 +97,9 @@ pool.acquire(async (connection) => {
             console.log(result);
         });
 
-    await T
-        .where(() => true)
-        .fetchValue(
-            connection,
-            () => 1.7976931348623157e+308
-        )
+    await squill
+        .selectValue(() => 1.7976931348623157e+308)
+        .fetchValue(connection)
         .then((result) => {
             console.log(result, 1.7976931348623157e+308);
         });

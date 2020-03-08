@@ -31,6 +31,7 @@ export enum SqliteAction {
     EXEC = "EXEC",
     EXPORT = "EXPORT",
     CLOSE = "CLOSE",
+    CREATE_GLOBAL_JS_FUNCTION = "CREATE_GLOBAL_JS_FUNCTION",
     CREATE_FUNCTION = "CREATE_FUNCTION",
     CREATE_AGGREGATE = "CREATE_AGGREGATE",
 }
@@ -51,6 +52,9 @@ export type FromSqliteMessage = ToDiscriminatedUnion<
         }
         | {
             action : SqliteAction.CLOSE,
+        }
+        | {
+            action : SqliteAction.CREATE_GLOBAL_JS_FUNCTION,
         }
         | {
             action : SqliteAction.CREATE_FUNCTION,
@@ -80,6 +84,16 @@ export type ToSqliteMessage = DistributeMerge<
         }
         | {
             action : SqliteAction.CLOSE,
+        }
+        | {
+            action : SqliteAction.CREATE_GLOBAL_JS_FUNCTION,
+            functionName : string,
+            /**
+             * ```ts
+             * ((a, b) => a+b).toString()
+             * ```
+             */
+            impl : string,
         }
         | {
             action : SqliteAction.CREATE_FUNCTION,

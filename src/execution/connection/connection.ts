@@ -443,6 +443,21 @@ export class Connection implements
         });
     }
 
+    createGlobalJsFunction (functionName : string, impl : (...args : any[]) => unknown) {
+        return this.asyncQueue.enqueue((worker) => {
+            return postMessage(
+                worker,
+                this.allocateId(),
+                SqliteAction.CREATE_GLOBAL_JS_FUNCTION,
+                {
+                    functionName,
+                    impl : impl.toString(),
+                },
+                () => {},
+            );
+        });
+    }
+
     /**
      * The `impl` function will be stringified using `impl.toString()`.
      *
