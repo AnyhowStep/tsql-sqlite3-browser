@@ -1,5 +1,6 @@
 import {Connection} from "../connection";
 import {initDecimalPolyfill} from "./decimal-polyfill";
+import {initBigIntPolyfill} from "./bigint-polyfill";
 
 declare const isBigInt : (x : unknown) => x is bigint;
 
@@ -13,103 +14,7 @@ export async function initPolyfill (
     connection : Connection
 ) {
     await initDecimalPolyfill(connection);
-    /**
-     * @todo Use `createVarArgFunction()`
-     */
-    await connection.createVarArgFunction("bigint_add", (...arr) => {
-        return BigInt(arr.reduce<number>(
-            (result, x) => result + Number(x),
-            0
-        ));
-        /*
-        if (isBigInt(a) && isBigInt(b)) {
-            const result = tm.BigIntUtil.add(a, b);
-            if (tm.BigIntUtil.lessThan(result, tm.BigInt("-9223372036854775808"))) {
-                throw new Error(`DataOutOfRangeError: bigint_add result was ${String(result)}`);
-            }
-            if (tm.BigIntUtil.greaterThan(result, tm.BigInt("9223372036854775807"))) {
-                throw new Error(`DataOutOfRangeError: bigint_add result was ${String(result)}`);
-            }
-            return result;
-        } else {
-            throw new Error(`Can only add two bigint values`);
-        }
-        */
-    });
-    await connection.createFunction("bigint_sub", (a, b) => {
-        return BigInt(Number(a) - Number(b));
-        /*
-        if (isBigInt(a) && isBigInt(b)) {
-            const result = tm.BigIntUtil.sub(a, b);
-            if (tm.BigIntUtil.lessThan(result, tm.BigInt("-9223372036854775808"))) {
-                throw new Error(`DataOutOfRangeError: bigint_sub result was ${String(result)}`);
-            }
-            if (tm.BigIntUtil.greaterThan(result, tm.BigInt("9223372036854775807"))) {
-                throw new Error(`DataOutOfRangeError: bigint_sub result was ${String(result)}`);
-            }
-            return result;
-        } else {
-            throw new Error(`Can only sub two bigint values`);
-        }
-        */
-    });
-    await connection.createVarArgFunction("bigint_mul", (...arr) => {
-        return BigInt(arr.reduce<number>(
-            (result, x) => result * Number(x),
-            1
-        ));
-        /*
-        if (isBigInt(a) && isBigInt(b)) {
-            const result = tm.BigIntUtil.mul(a, b);
-            if (tm.BigIntUtil.lessThan(result, tm.BigInt("-9223372036854775808"))) {
-                throw new Error(`DataOutOfRangeError: bigint_mul result was ${String(result)}`);
-            }
-            if (tm.BigIntUtil.greaterThan(result, tm.BigInt("9223372036854775807"))) {
-                throw new Error(`DataOutOfRangeError: bigint_mul result was ${String(result)}`);
-            }
-            return result;
-        } else {
-            throw new Error(`Can only mul two bigint values`);
-        }
-        */
-    });
-    await connection.createFunction("bigint_neg", (a) => {
-        return BigInt(-Number(a));
-        /*
-        if (isBigInt(a)) {
-            const result = tm.BigIntUtil.sub(0, a);
-            if (tm.BigIntUtil.lessThan(result, tm.BigInt("-9223372036854775808"))) {
-                throw new Error(`DataOutOfRangeError: bigint_neg result was ${String(result)}`);
-            }
-            if (tm.BigIntUtil.greaterThan(result, tm.BigInt("9223372036854775807"))) {
-                throw new Error(`DataOutOfRangeError: bigint_neg result was ${String(result)}`);
-            }
-            return result;
-        } else {
-            throw new Error(`Can only neg bigint values`);
-        }
-        */
-    });
-    await connection.createFunction("bigint_div", (a, b) => {
-        return BigInt(Math.floor(Number(a) / Number(b)));
-        /*
-        if (isBigInt(a) && isBigInt(b)) {
-            if (tm.BigIntUtil.equal(b, tm.BigInt(0))) {
-                throw new Error(`DivideByZeroError: Cannot divide by zero`);
-            }
-            const result = tm.BigIntUtil.div(a, b);
-            if (tm.BigIntUtil.lessThan(result, tm.BigInt("-9223372036854775808"))) {
-                throw new Error(`DataOutOfRangeError: bigint_div result was ${String(result)}`);
-            }
-            if (tm.BigIntUtil.greaterThan(result, tm.BigInt("9223372036854775807"))) {
-                throw new Error(`DataOutOfRangeError: bigint_div result was ${String(result)}`);
-            }
-            return result;
-        } else {
-            throw new Error(`Can only div two bigint values`);
-        }
-        */
-    });
+    await initBigIntPolyfill(connection);
     await connection.createFunction("ASCII", (x) => {
         if (typeof x == "string") {
             if (x == "") {
