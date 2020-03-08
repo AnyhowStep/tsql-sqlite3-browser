@@ -104,4 +104,18 @@ pool.acquire(async (connection) => {
             console.log(result, 1.7976931348623157e+308);
         });
 
+    await squill
+        .selectValue(() => squill.double.fractionalRemainder(-1, 1))
+        .fetchValue(connection)
+        .then((result) => {
+            console.log(result, 0, -0);
+        });
+
+});
+
+import * as tape from "tape";
+tape(__filename, t => {
+    t.deepEqual(0, -0);
+    t.deepEqual(-0, 0);
+    t.end();
 });
