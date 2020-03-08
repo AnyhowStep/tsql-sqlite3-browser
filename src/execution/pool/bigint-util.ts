@@ -53,3 +53,21 @@ export function bigIntSubtract (a : bigint, b : bigint) {
     assertSafeBigIntSigned(result);
     return BigInt(result);
 }
+
+export function bigIntUnaryMinus (a : bigint) {
+    if (typeof a == "bigint") {
+        const result = -a;
+        assertSafeBigIntSigned(result);
+        return result;
+    }
+
+    const str = String(a);
+    const result = (
+        str[0] == "-" ?
+        str.substr(1) :
+        "-" + str
+    );
+
+    assertSafeBigIntSigned(result);
+    return BigInt(result);
+}

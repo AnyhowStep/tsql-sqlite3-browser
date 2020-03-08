@@ -20,6 +20,7 @@ const {
     assertSafeBigIntSigned,
     bigIntAdd,
     bigIntSubtract,
+    bigIntUnaryMinus,
 } = BigIntUtil;
 
 declare const isBigInt : (x : unknown) => x is bigint;
@@ -39,6 +40,7 @@ export async function initBigIntPolyfill (
     await connection.createGlobalJsFunction("assertSafeBigIntSigned", assertSafeBigIntSigned);
     await connection.createGlobalJsFunction("bigIntAdd", bigIntAdd);
     await connection.createGlobalJsFunction("bigIntSubtract", bigIntSubtract);
+    await connection.createGlobalJsFunction("bigIntUnaryMinus", bigIntUnaryMinus);
 
     await connection.createVarArgFunction("bigint_add", (...arr) => {
         if (arr.length == 0) {
@@ -98,21 +100,10 @@ export async function initBigIntPolyfill (
         */
     });
     await connection.createFunction("bigint_neg", (a) => {
-        return BigInt(-Number(a));
-        /*
-        if (isBigInt(a)) {
-            const result = tm.BigIntUtil.sub(0, a);
-            if (tm.BigIntUtil.lessThan(result, tm.BigInt("-9223372036854775808"))) {
-                throw new Error(`DataOutOfRangeError: bigint_neg result was ${String(result)}`);
-            }
-            if (tm.BigIntUtil.greaterThan(result, tm.BigInt("9223372036854775807"))) {
-                throw new Error(`DataOutOfRangeError: bigint_neg result was ${String(result)}`);
-            }
-            return result;
-        } else {
-            throw new Error(`Can only neg bigint values`);
+        if (!isBigInt(a)) {
+            throw new Error(`Cannot unary minus non-bigint`);
         }
-        */
+        return bigIntUnaryMinus(a);
     });
     await connection.createFunction("bigint_div", (a, b) => {
         return BigInt(Math.floor(Number(a) / Number(b)));
