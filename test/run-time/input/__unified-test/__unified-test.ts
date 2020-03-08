@@ -16,17 +16,6 @@ const sqlite3Worker = new w.SqliteWorker({
 
 const pool = new sqlite3.Pool(sqlite3Worker);
 
-/*
-pool.acquire(async (connection) => {
-    //point [ RowDataPacket { 'POINT(3,4)': { x: 3, y: 4 } } ]
-    console.log("point", (await connection.rawQuery("SELECT POINT(3,4)")).results);
-}).then(
-    () => {},
-    (err) => {
-        console.error(err);
-    }
-);
-*/
 unifiedTest({
     pool,
     tape,

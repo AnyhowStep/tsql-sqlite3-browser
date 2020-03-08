@@ -27,10 +27,15 @@ export async function initPolyfill (
     });
     await connection.createFunction("BIN", (x) => {
         if (isBigInt(x)) {
-            if (Number(x) >= 0) {
-                return Number(x).toString(2);
+            const str = x.toString();
+            if (str[0] == "-") {
+                return binaryStrSetWidth(
+                    signedDecimalStrToBinaryStr(str),
+                    64
+                );
             } else {
-                return binaryStrSetWidth(signedDecimalStrToBinaryStr(x.toString()), 64);
+                //substr to remove leading 0
+                return signedDecimalStrToBinaryStr(str).substr(1);
             }
             /*
             if (tm.BigIntUtil.greaterThanOrEqual(x, 0)) {
