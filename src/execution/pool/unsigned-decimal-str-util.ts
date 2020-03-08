@@ -53,6 +53,10 @@ export function unsignedDigitArraySubtract (numA : readonly number[], numB : rea
         throw new Error(`Result of unsigned subtraction is negative`);
     }
 
+    while (result[0] == 0 && result.length >= 2) {
+        result.shift();
+    }
+
     return result;
 }
 
