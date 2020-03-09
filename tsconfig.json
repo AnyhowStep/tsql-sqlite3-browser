@@ -1,13 +1,10 @@
 {
-    "extends" : "./tsconfig-base.json",
     "compilerOptions": {
-        "outDir": "./dist",
-        "rootDir": "./src",
-        "types": [
-            "@types/node"
-        ]
     },
-    "include" : [
-        "./src/**/*.ts"
-    ]
+    "references": [
+        { "path": "src/driver" },
+        { "path": "src/worker-browser" },
+        { "path": "src/worker-node" }
+    ],
+    "files" : []
 }

@@ -1,13 +1,13 @@
 import * as tape from "tape";
 import {unifiedTest, UnifiedSchema} from "@squill/squill/unified-test";
 import * as tsql from "@squill/squill";
-import * as sqlite3 from "../../../../dist";
+import * as sqlite3 from "../../../../dist/driver";
 import * as worker from "worker_threads";
 
 const myWorker = new worker.Worker(
     typeof BigInt(0) == "bigint" ?
-    `${__dirname}/../../../../dist/worker/node-worker.js` :
-    `${__dirname}/../../../../dist/worker/node-worker-force-bigint-polyfill.js`
+    `${__dirname}/../../../../dist/worker/worker-node.js` :
+    `${__dirname}/../../../../dist/worker/worker-node-force-bigint-polyfill.js`
 );
 
 const sqlite3Worker = new sqlite3.SqliteWorker({

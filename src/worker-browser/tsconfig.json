@@ -1,0 +1,17 @@
+{
+    "extends" : "../../tsconfig-base.json",
+    "compilerOptions": {
+        "outDir": "../../dist/worker-browser",
+        "declaration": false,
+        "declarationMap": false,
+        "sourceMap": false,
+        "composite": false,
+        "types": []
+    },
+    "references" : [
+        { "path": "../driver" }
+    ],
+    "include" : [
+        "./**/*.ts"
+    ]
+}

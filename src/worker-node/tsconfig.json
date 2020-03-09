@@ -1,0 +1,18 @@
+{
+    "extends" : "../../tsconfig-base.json",
+    "compilerOptions": {
+        "outDir": "../../dist/worker-node",
+        "declaration": false,
+        "declarationMap": false,
+        "sourceMap": false,
+        "composite": false,
+        "types": [
+            "@types/node"
+        ]
+    },
+    "references" : [
+    ],
+    "include" : [
+        "./**/*.ts"
+    ]
+}

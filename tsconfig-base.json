@@ -5,6 +5,7 @@
         "declaration": true,
         "diagnostics": true,
         "extendedDiagnostics": true,
+        "composite": true,
 
         "experimentalDecorators": false,
 

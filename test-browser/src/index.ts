@@ -1,7 +1,7 @@
 import * as sql from "@squill/squill";
-import * as sqlite3 from "../../dist";
+import * as sqlite3 from "../../dist/driver";
 
-const worker = new Worker("/browser-worker.js");
+const worker = new Worker("/worker-browser.js");
 
 const sqlite3Worker = new sqlite3.SqliteWorker({
     postMessage : worker.postMessage.bind(worker),

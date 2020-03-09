@@ -4,4 +4,5 @@ report.*
 coverage
 development.env
 test-browser/public/browser-worker.js
+test-browser/public/worker-browser.js
 test-browser/public/sql-wasm-debug.wasm
