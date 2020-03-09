@@ -243,7 +243,8 @@ function initWorker (
                         error == undefined ?
                         "An unknown error occurred" :
                         typeof error.message == "string" ?
-                        error.message + "\n" + error.stack :
+                        //error.message + "\n" + error.stack :
+                        error.message :
                         "An unexpected error occurred: " + String(error)
                     ),
                 });

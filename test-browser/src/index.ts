@@ -1,5 +1,6 @@
 import * as sql from "@squill/squill";
 import * as sqlite3 from "../../dist/driver";
+import {ExecResult} from "../../dist/sql-wasm/sql-wasm-debug";
 
 const worker = new Worker("/worker-browser.js");
 
@@ -19,10 +20,15 @@ const pool = new sqlite3.Pool(sqlite3Worker);
 
 declare global {
     interface Window {
-        executeRawQuery : (sqlString : string) => Promise<sql.RawQueryResult>;
+        rawQuery : (sqlString : string) => Promise<sql.RawQueryResult>;
+        exec : (sqlString : string) => Promise<{ execResult : ExecResult, rowsModified : number }>;
     }
 }
 
-window.executeRawQuery = (sqlString) => pool.acquire(
+window.rawQuery = (sqlString) => pool.acquire(
     connection => connection.rawQuery(sqlString)
+);
+
+window.exec = (sqlString) => pool.acquire(
+    connection => connection.exec(sqlString)
 );

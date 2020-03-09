@@ -2,8 +2,197 @@
     <head>
         <script src="/dist/vendors.bundle.js"></script>
         <script src="/dist/index.js"></script>
+        <style>
+            #query-input {
+                width : 100%;
+                min-height : 400px;
+            }
+
+            .CodeMirror {
+                border : black 2px solid;
+            }
+
+            #result-container table {
+                margin-top : 10px;
+            }
+        </style>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/codemirror.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/codemirror.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/mode/sql/sql.min.js"></script>
     </head>
     <body>
-        Hi
+        <textarea id="query-input"></textarea>
+        <button onclick="clearQueryInput()">Clear</button>
+        <button onclick="resetToDefaultQueryInput()">Reset</button>
+        <div id="result-container">
+
+        </div>
+        <textarea id="default-query" style="display:none">
+SELECT 1e999, -1e999, 1e308, 1308, true, false, null, 'hi', x'123456';
+
+DROP TABLE IF EXISTS T;
+CREATE TABLE person (
+    personId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description VARCHAR(2048) NOT NULL,
+    bio VARCHAR(9001) NOT NULL AS ('Hi, my name is ' || name || '. ' || description)
+);
+
+INSERT INTO
+    person (name, description)
+VALUES
+    ('Tom', 'I love to change lightbulbs'),
+    ('Dick', 'I love lightbulbs'),
+    ('Harry', 'I lightbulbs')
+;
+
+SELECT * FROM person;
+
+pragma table_info(person);
+
+SELECT * FROM sqlite_master;
+
+        </textarea>
     </body>
+    <script>
+        const defaultQuery = document.getElementById("default-query").value;
+        const queryInput = document.getElementById("query-input");
+        const resultContainer = document.getElementById("result-container");
+        let resultDiv = undefined;
+
+        const editor = CodeMirror.fromTextArea(queryInput, {
+            mode: 'text/x-mysql',
+            viewportMargin: Infinity,
+            indentWithTabs: true,
+            smartIndent: true,
+            lineNumbers: true,
+            matchBrackets: true,
+            autofocus: true,
+            extraKeys: {
+                "Ctrl-Enter": submitQuery,
+                //"Ctrl-S": savedb,
+            }
+        });
+
+        if ("localStorage" in window) {
+            const query = localStorage.getItem("query");
+            if (query == undefined) {
+                editor.setValue(defaultQuery);
+            } else {
+                editor.setValue(query);
+            }
+        }
+
+        function clearQueryInput () {
+            editor.setValue("");
+        }
+
+        function resetToDefaultQueryInput () {
+            editor.setValue(defaultQuery);
+        }
+
+        function submitQuery () {
+            if (resultDiv != undefined) {
+                resultDiv.parentNode.removeChild(resultDiv);
+                resultDiv = undefined;
+            }
+            resultDiv = document.createElement("div");
+            resultContainer.appendChild(resultDiv);
+
+            resultDiv.appendChild(document.createTextNode("Executing..."));
+
+            const query = editor.getValue();
+            console.log(query);
+            if ("localStorage" in window) {
+                localStorage.setItem("query", query);
+            }
+            exec(query)
+                .then(
+                    (result) => {
+                        console.log(result);
+                        if (resultDiv != undefined) {
+                            resultDiv.parentNode.removeChild(resultDiv);
+                            resultDiv = undefined;
+                        }
+                        resultDiv = document.createElement("div");
+                        resultContainer.appendChild(resultDiv);
+
+                        for (const resultSet of result.execResult) {
+                            const table = document.createElement("table");
+                            resultDiv.appendChild(table);
+
+                            table.setAttribute("border", "1");
+                            table.setAttribute("cellpadding", "5");
+
+                            const thead = document.createElement("thead");
+                            const theadTr = document.createElement("tr");
+                            table.appendChild(thead);
+                            thead.appendChild(theadTr);
+
+                            for (const columnAlias of resultSet.columns) {
+                                const th = document.createElement("th");
+                                theadTr.appendChild(th);
+                                th.appendChild(document.createTextNode(columnAlias));
+                            }
+
+                            const tbody = document.createElement("tbody");
+                            table.appendChild(tbody);
+                            for (const row of resultSet.values) {
+                                const tr = document.createElement("tr");
+                                tbody.appendChild(tr);
+                                for (const col of row) {
+                                    const td = document.createElement("td");
+                                    tr.appendChild(td);
+                                    td.appendChild(document.createTextNode(String(col)));
+                                    if (col === null) {
+                                        td.setAttribute("style", "color:#666666");
+                                    } else if (typeof col == "number") {
+                                        td.setAttribute("style", "color:#0000cc");
+                                    } else if (typeof col == "bigint") {
+                                        td.setAttribute("style", "color:#008800");
+                                        td.appendChild(document.createTextNode("n"));
+                                    } else if (typeof col == "string") {
+                                        td.setAttribute("style", "color:#130700");
+                                    } else if (col instanceof Uint8Array) {
+                                        td.setAttribute("style", "color:#4b5320");
+                                        td.prepend(document.createTextNode("Uint8Array(" + col.length + ") "));
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    (err) => {
+                        console.error(err);
+                        if (resultDiv != undefined) {
+                            resultDiv.parentNode.removeChild(resultDiv);
+                            resultDiv = undefined;
+                        }
+                        resultDiv = document.createElement("div");
+                        resultContainer.appendChild(resultDiv);
+
+                        {
+                            const h2 = document.createElement("h2");
+                            resultDiv.appendChild(h2);
+                            h2.appendChild(document.createTextNode("Message"));
+                            const pre = document.createElement("pre");
+                            resultDiv.appendChild(pre);
+                            pre.appendChild(document.createTextNode(err.message));
+                        }
+                        {
+                            const h2 = document.createElement("h2");
+                            resultDiv.appendChild(h2);
+                            h2.appendChild(document.createTextNode("Stack"));
+                            const pre = document.createElement("pre");
+                            resultDiv.appendChild(pre);
+                            pre.appendChild(document.createTextNode(err.stack));
+                        }
+                    }
+                )
+        }
+        queryInput.onkeydown = function (e) {
+            if (e.ctrlKey && e.keyCode == 13) {
+                submitQuery();
+            }
+        };
+    </script>
 </html>
