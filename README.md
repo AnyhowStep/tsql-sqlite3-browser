@@ -8,19 +8,22 @@ Based on [`sql.js`](https://github.com/sql-js/sql.js)
 
 ### TODO
 
-+ Browser worker support
-+ Clean up build scripts and dist
-+ Detailed usage instructions
-+ Browser usage instructions
++ Document browser usage instructions
+  + You may see sample usage at [test-browser/src/index.ts](test-browser/src/index.ts)
++ Document native BigInt vs polyfilled BigInt support
++ Document detailed usage instructions
++ Document testing instructions (node and browser)
+
 
 ```ts
 //node.js usage instructions
 import * as sql from "@squill/squill";
 import * as sqlite3 from "@squill/sqlite3-browser";
 import * as worker from "worker_threads";
+import * as fs from "fs";
 
 const myWorker = new worker.Worker(
-    `${__dirname}/path/to/node_modules/@squill/sqlite3-browser/dist/worker/node-worker.js`
+    `${__dirname}/path/to/node_modules/@squill/sqlite3-browser/dist/worker/worker-node.js`
 );
 
 const sqlite3Worker = new sqlite3.SqliteWorker({
@@ -37,8 +40,34 @@ const sqlite3Worker = new sqlite3.SqliteWorker({
 
 const pool = new sqlite3.Pool(sqlite3Worker);
 
-await pool
-    .acquire(connection => connection.open(`path/to/sqlite3/database/file`));
+//May open a sqlite3 file
+await pool.acquire(
+    connection => connection.open(
+        fs.readFileSync(`path/to/sqlite3/database/file`)
+    )
+);
+
+//Raw queries may be used
+await pool.acquire(async (connection) => {
+    await connection.rawQuery(`CREATE TABLE T (x INT)`);
+    await connection.rawQuery(`INSERT INTO T VALUES (1), (2), (3)`);
+    /*
+        {
+            "query": {
+                "sql": "SELECT SUM(x) FROM T"
+            },
+            "results": [
+                [
+                    6n //A BigInt
+                ]
+            ],
+            "columns": [
+                "SUM(x)"
+            ]
+        }
+    */
+    await connection.rawQuery(`SELECT SUM(x) FROM T`);
+});
 
 const myTable = sql.table("myTable")
     .addColumns({
