@@ -4,7 +4,20 @@ declare let initSqlJs : typeof import("../sql-wasm/sql-wasm-debug").default;
 declare let forceBigIntPolyfill : boolean;
 
 import * as sqljs from "../sql-wasm/sql-wasm-debug";
-import {FromSqliteMessage, ToSqliteMessage, SqliteAction} from "./worker.sql";
+type FromSqliteMessage = import("./worker.sql").FromSqliteMessage;
+type ToSqliteMessage = import("./worker.sql").ToSqliteMessage;
+
+const SqliteAction : {
+    [k in keyof typeof import("./worker.sql").SqliteAction] : typeof import("./worker.sql").SqliteAction[k]
+} = {
+    OPEN : "OPEN" as import("./worker.sql").SqliteAction.OPEN,
+    EXEC : "EXEC" as import("./worker.sql").SqliteAction.EXEC,
+    EXPORT : "EXPORT" as import("./worker.sql").SqliteAction.EXPORT,
+    CLOSE : "CLOSE" as import("./worker.sql").SqliteAction.CLOSE,
+    CREATE_GLOBAL_JS_FUNCTION : "CREATE_GLOBAL_JS_FUNCTION" as import("./worker.sql").SqliteAction.CREATE_GLOBAL_JS_FUNCTION,
+    CREATE_FUNCTION : "CREATE_FUNCTION" as import("./worker.sql").SqliteAction.CREATE_FUNCTION,
+    CREATE_AGGREGATE : "CREATE_AGGREGATE" as import("./worker.sql").SqliteAction.CREATE_AGGREGATE,
+};
 
 class MyBigIntPolyfill {
     private value : string;
@@ -64,7 +77,10 @@ function initWorker (
         dbInstance = undefined;
     };
 
-    const processMessage = async (data : ToSqliteMessage) => {
+    const processMessage = async (data : ToSqliteMessage|{ isTrusted : boolean, data : ToSqliteMessage }) => {
+        if ("isTrusted" in data) {
+            data = data.data;
+        }
         switch (data.action) {
             case SqliteAction.OPEN: {
                 await createDb(data.buffer);
@@ -213,7 +229,11 @@ function initWorker (
             }
         }
     };
-    return (data : ToSqliteMessage) => {
+    return (event : ToSqliteMessage|{ isTrusted : boolean, data : ToSqliteMessage }) => {
+        const data = ("isTrusted" in event) ?
+            event.data :
+            event;
+
         processMessage(data)
             .catch((error) => {
                 postMessage({

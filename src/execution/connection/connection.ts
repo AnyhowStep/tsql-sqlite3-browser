@@ -98,7 +98,8 @@ function postMessage<ActionT extends SqliteAction, ResultT> (
                 originalInnerReject(newErr);
             }
         };
-        worker.onmessage = ({data}) => {
+        worker.onmessage = (e) => {
+            const data = e.data;
             onMessage(
                 data,
                 id,
