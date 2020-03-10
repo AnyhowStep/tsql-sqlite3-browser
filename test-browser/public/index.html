@@ -21,6 +21,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/mode/sql/sql.min.js"></script>
     </head>
     <body>
+        <a href="https://github.com/anyhowstep/tsql-sqlite3-browser">Back to Github repository</a>
         <textarea id="query-input"></textarea>
         <button onclick="clearQueryInput()">Clear</button>
         <button onclick="resetToDefaultQueryInput()">Reset</button>
@@ -59,6 +60,23 @@ SELECT * FROM sqlite_master;
         </textarea>
     </body>
     <script>
+        //Really bad BigInt polyfill
+        if (typeof BigInt === "undefined") {
+            const MyBigInt = /** @class */ (function () {
+                function MyBigInt(value) {
+                    this.value = String(value);
+                }
+                MyBigInt.prototype.toString = function () {
+                    return this.value;
+                };
+                return MyBigInt;
+            }());
+
+            window.BigInt = function (x) {
+                return new MyBigInt(x);
+            };
+        }
+
         const defaultQuery = document.getElementById("default-query").value;
         const queryInput = document.getElementById("query-input");
         const resultContainer = document.getElementById("result-container");

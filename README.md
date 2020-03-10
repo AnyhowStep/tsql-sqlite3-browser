@@ -1,3 +1,5 @@
+### `@squill/sqlite3-browser`
+
 At the moment, written with SQLite 3.31 in mind.
 
 This is a SQLite 3.31 adapter for [`@squill/squill`](https://github.com/AnyhowStep/tsql)
@@ -6,7 +8,7 @@ Based on [`sql.js`](https://github.com/sql-js/sql.js)
 
 -----
 
-A Playground executes raw queries may be found at https://anyhowstep.github.io/tsql-sqlite3-browser/test-browser/public/
+A Playground that executes raw queries may be found at https://anyhowstep.github.io/tsql-sqlite3-browser/test-browser/public/
 
 -----
 
@@ -16,8 +18,9 @@ A Playground executes raw queries may be found at https://anyhowstep.github.io/t
   + You may see sample usage at [test-browser/src/index.ts](test-browser/src/index.ts)
 + Document native BigInt vs polyfilled BigInt support
 + Document detailed usage instructions
-+ Document testing instructions (node and browser)
 
+
+### node.js Usage
 
 ```ts
 //node.js usage instructions
@@ -144,3 +147,23 @@ await pool
     .acquire(connection => connection.export());
 
 ```
+
+-----
+
+### Development and Testing
+
+For development, you'll need to first set up https://github.com/AnyhowStep/tsql
+
+1. Clone https://github.com/AnyhowStep/tsql
+1. `npm install`
+1. `npm run rebuild`
+
+You may now set up this repo
+
+1. Clone this repo
+1. `npm install`
+1. `npm link ../path/to/tsql` (We need this for unified tests which are not published on npm)
+1. `npm run sanity-check` (builds and runs node tests)
+1. `npm run build-test-browser` (builds `test-browser`; only run after `sanity-check` or `build`!)
+1. `npm run start-test-browser` (Starts an `express` server at port 8000 for the Playground)
+1. `npm run` for more commands
