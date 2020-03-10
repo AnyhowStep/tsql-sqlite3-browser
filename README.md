@@ -8,7 +8,10 @@ Based on [`sql.js`](https://github.com/sql-js/sql.js)
 
 -----
 
-A Playground that executes raw queries may be found at https://anyhowstep.github.io/tsql-sqlite3-browser/test-browser/public/
+
+A Playground that executes raw SQL **and TS code** may be found at https://anyhowstep.github.io/tsql-sqlite3-browser/test-playground/public/
+
+A Playground that executes raw SQL only may be found at https://anyhowstep.github.io/tsql-sqlite3-browser/test-browser/public/
 
 -----
 

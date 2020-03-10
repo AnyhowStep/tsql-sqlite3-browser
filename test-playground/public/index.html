@@ -1,0 +1,318 @@
+<html>
+    <head>
+        <script>
+            //Really bad BigInt polyfill
+            const MyBigInt = /** @class */ (function () {
+                function MyBigInt(value) {
+                    this.value = String(value);
+                }
+                MyBigInt.prototype.toString = function () {
+                    return this.value;
+                };
+                return MyBigInt;
+            }());
+
+            if (typeof BigInt === "undefined") {
+                console.log("Using really bad BigInt polyfill because browser does not support it")
+                window.BigInt = function (x) {
+                    return new MyBigInt(x);
+                };
+            }
+        </script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/codemirror.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/codemirror.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/mode/sql/sql.min.js"></script>
+
+        <style>
+            body {
+                display : inline-grid;
+                grid-template-rows: 700px 1fr;
+                height : 100%;
+                width : 100%;
+            }
+
+            #pre-ts-input-area {
+                display : inline-block;
+                width: 33%;
+            }
+
+            #post-ts-input-area {
+                display : inline-block;
+                width: 33%;
+            }
+
+            #pre-ts-input {
+                width : 100%;
+                height : 100%;
+            }
+
+            #pre-ts-input-area > .CodeMirror {
+                height : 100%;
+            }
+
+            #post-ts-input {
+                width : 100%;
+                height : 100%;
+            }
+
+            #post-ts-input-area > .CodeMirror {
+                height : 100%;
+            }
+
+            .CodeMirror {
+                border : black 2px solid;
+            }
+
+            #pre-ts-result-bottom {
+                overflow-x : scroll;
+                height : 100%;
+            }
+
+            #post-ts-result-bottom {
+                overflow-x : scroll;
+                height : 100%;
+            }
+
+            #pre-ts-result-container table {
+                margin-top : 10px;
+            }
+
+            #post-ts-result-container table {
+                margin-top : 10px;
+            }
+
+            #editor {
+                display : inline-block;
+                width : 32%;
+                height : 100%;
+                border : black 2px solid;
+            }
+
+            #ide {
+                height : 700px;
+                width : 100%;
+            }
+
+            #ide > div {
+                border : 2px black solid;
+            }
+
+            #result-area {
+                height : 100%;
+                width : 100%;
+                display : inline-grid;
+                grid-template-columns: 1fr 1fr;
+                margin-top : 10px;
+            }
+
+            #result-area > div {
+                border : 2px black solid;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="ide">
+            <div id="pre-ts-input-area">
+                <textarea id="pre-ts-input"></textarea>
+            </div>
+            <div id="editor"></div>
+            <div id="post-ts-input-area">
+                <textarea id="post-ts-input"></textarea>
+            </div>
+        </div>
+        <div id="result-area">
+            <div id="pre-ts-result-bottom" style="padding:5px">
+                <a href="https://github.com/anyhowstep/tsql-sqlite3-browser">Back to Github repository</a>
+                <div id="pre-ts-result-container">
+
+                </div>
+            </div>
+            <div id="post-ts-result-bottom" style="padding:5px;">
+                <button onclick="clearEditors()">Clear</button>
+                <button onclick="resetEditors()">Reset</button>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button onclick="runContent()">Run</button>
+                <br/>
+                <button onclick="save()">Save SQLite3 File</button>
+                <br/>
+                Load SQLite3 File <input type="file" id="sqlite3-file-input"/>
+                <div id="post-ts-result-container">
+
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript" src="app.bundle.js"></script>
+        <script type="text/javascript" src="editor.worker.bundle.js"></script>
+        <script type="text/javascript" src="json.worker.bundle.js"></script>
+        <script type="text/javascript" src="css.worker.bundle.js"></script>
+        <script type="text/javascript" src="html.worker.bundle.js"></script>
+        <script type="text/javascript" src="ts.worker.bundle.js"></script>
+    </body>
+    <script>
+        const preTsInput = document.getElementById("pre-ts-input");
+        const postTsInput = document.getElementById("post-ts-input");
+        const sqlite3FileInput = document.getElementById("sqlite3-file-input");
+
+        const preTsOutput = new Output(
+            document.getElementById("pre-ts-result-container"),
+            MyBigInt
+        );
+        const postTsOutput = new Output(
+            document.getElementById("post-ts-result-container"),
+            MyBigInt
+        );
+
+        const preTsEditor = CodeMirror.fromTextArea(preTsInput, {
+            mode: 'text/x-mysql',
+            viewportMargin: Infinity,
+            indentWithTabs: true,
+            smartIndent: true,
+            lineNumbers: true,
+            matchBrackets: true,
+            autofocus: true,
+            extraKeys: {
+                "Ctrl-Enter": runContent,
+                "Ctrl-S": save,
+            }
+        });
+
+        const postTsEditor = CodeMirror.fromTextArea(postTsInput, {
+            mode: 'text/x-mysql',
+            viewportMargin: Infinity,
+            indentWithTabs: true,
+            smartIndent: true,
+            lineNumbers: true,
+            matchBrackets: true,
+            autofocus: true,
+            extraKeys: {
+                "Ctrl-Enter": runContent,
+                "Ctrl-S": save,
+            }
+        });
+
+        if ("localStorage" in window) {
+            const savedPreTsContent = localStorage.getItem("savedPreTsContent");
+            if (savedPreTsContent == undefined) {
+                preTsEditor.setValue(defaultPreTsContent);
+            } else {
+                preTsEditor.setValue(savedPreTsContent);
+            }
+
+            const savedPostTsContent = localStorage.getItem("savedPostTsContent");
+            if (savedPostTsContent == undefined) {
+                postTsEditor.setValue(defaultPostTsContent);
+            } else {
+                postTsEditor.setValue(savedPostTsContent);
+            }
+
+            const savedTsContent = localStorage.getItem("savedTsContent");
+            if (savedTsContent == undefined) {
+                tsEditor.setValue(defaultTsContent);
+            } else {
+                tsEditor.setValue(savedTsContent);
+            }
+        }
+
+        function clearEditors () {
+            preTsEditor.setValue("");
+            postTsEditor.setValue("");
+            tsEditor.setValue("");
+        }
+
+        function resetEditors () {
+            preTsEditor.setValue(defaultPreTsContent);
+            postTsEditor.setValue(defaultPostTsContent);
+            tsEditor.setValue(defaultTsContent);
+        }
+
+        function execQueryAndUpdateOutput (query, output) {
+            return exec(query)
+                .then(
+                    (result) => {
+                        output.setResult(result);
+                    },
+                    (err) => {
+                        output.setError(err);
+                    }
+                );
+        }
+
+        function runContent () {
+            const preTsContent = preTsEditor.getValue();
+            console.log(preTsContent);
+            const postTsContent = postTsEditor.getValue();
+            console.log(postTsContent);
+            const tsContent = tsEditor.getValue();
+            if ("localStorage" in window) {
+                localStorage.setItem("savedPreTsContent", preTsContent);
+                localStorage.setItem("savedPostTsContent", postTsContent);
+                localStorage.setItem("savedTsContent", tsContent);
+            }
+
+            preTsOutput.setText("Executing...");
+            execQueryAndUpdateOutput(preTsContent, preTsOutput)
+                .then(function () {
+                    try {
+                        eval("{" + tsContent + "/**/}");
+
+                        postTsOutput.setText("Executing...");
+                        execQueryAndUpdateOutput(postTsContent, postTsOutput);
+                    } catch (err) {
+                        postTsOutput.setError(err);
+                    }
+                });
+        }
+
+        function save () {
+            exportDb()
+                .then(
+                    (buffer) => {
+                        const a = document.createElement("a");
+                        document.body.appendChild(a);
+                        a.href = window.URL.createObjectURL(new Blob([buffer]));
+                        a.download = "sqlite3.db";
+                        a.onclick = function () {
+                            setTimeout(function () {
+                                window.URL.revokeObjectURL(a.href);
+                            }, 1500);
+                        };
+                        a.click();
+                    },
+                    (err) => {
+                        onError(err);
+                    }
+                )
+        }
+
+        sqlite3FileInput.onchange = function load () {
+            postTsOutput.setText("Loading...");
+            const f = sqlite3FileInput.files[0];
+            console.log(f);
+            const r = new FileReader();
+            r.onload = function () {
+                console.log(r.result);
+                importDb(new Uint8Array(r.result))
+                    .then(
+                        () => {
+                            execQueryAndUpdateOutput("SELECT * FROM sqlite_master", postTsOutput);
+                        },
+                        (err) => {
+                            onError(err);
+                        }
+                    );
+            }
+            r.readAsArrayBuffer(f);
+        }
+
+        window.onresize = function () {
+            tsEditor.layout();
+        };
+
+        setTimeout(
+            function () {
+                tsEditor.layout();
+            },
+            1000
+        )
+    </script>
+</html>
