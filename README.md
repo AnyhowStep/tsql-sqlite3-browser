@@ -6,6 +6,10 @@ Based on [`sql.js`](https://github.com/sql-js/sql.js)
 
 -----
 
+A Playground executes raw queries may be found at https://anyhowstep.github.io/tsql-sqlite3-browser/test-browser/public/
+
+-----
+
 ### TODO
 
 + Document browser usage instructions

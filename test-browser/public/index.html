@@ -24,13 +24,17 @@
         <textarea id="query-input"></textarea>
         <button onclick="clearQueryInput()">Clear</button>
         <button onclick="resetToDefaultQueryInput()">Reset</button>
+        <br/>
+        <button onclick="save()">Save</button>
+        <br/>
+        Load File <input type="file" id="sqlite3-file-input"/>
         <div id="result-container">
 
         </div>
         <textarea id="default-query" style="display:none">
 SELECT 1e999, -1e999, 1e308, 1308, true, false, null, 'hi', x'123456';
 
-DROP TABLE IF EXISTS T;
+DROP TABLE IF EXISTS person;
 CREATE TABLE person (
     personId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -58,6 +62,7 @@ SELECT * FROM sqlite_master;
         const defaultQuery = document.getElementById("default-query").value;
         const queryInput = document.getElementById("query-input");
         const resultContainer = document.getElementById("result-container");
+        const sqlite3FileInput = document.getElementById("sqlite3-file-input");
         let resultDiv = undefined;
 
         const editor = CodeMirror.fromTextArea(queryInput, {
@@ -70,7 +75,7 @@ SELECT * FROM sqlite_master;
             autofocus: true,
             extraKeys: {
                 "Ctrl-Enter": submitQuery,
-                //"Ctrl-S": savedb,
+                "Ctrl-S": save,
             }
         });
 
@@ -91,31 +96,42 @@ SELECT * FROM sqlite_master;
             editor.setValue(defaultQuery);
         }
 
-        function submitQuery () {
+        function clearOutput () {
             if (resultDiv != undefined) {
                 resultDiv.parentNode.removeChild(resultDiv);
                 resultDiv = undefined;
             }
             resultDiv = document.createElement("div");
             resultContainer.appendChild(resultDiv);
+        }
 
-            resultDiv.appendChild(document.createTextNode("Executing..."));
-
-            const query = editor.getValue();
-            console.log(query);
-            if ("localStorage" in window) {
-                localStorage.setItem("query", query);
+        function onError (err) {
+            console.error(err);
+            clearOutput();
+            {
+                const h2 = document.createElement("h2");
+                resultDiv.appendChild(h2);
+                h2.appendChild(document.createTextNode("Message"));
+                const pre = document.createElement("pre");
+                resultDiv.appendChild(pre);
+                pre.appendChild(document.createTextNode(err.message));
             }
+            {
+                const h2 = document.createElement("h2");
+                resultDiv.appendChild(h2);
+                h2.appendChild(document.createTextNode("Stack"));
+                const pre = document.createElement("pre");
+                resultDiv.appendChild(pre);
+                pre.appendChild(document.createTextNode(err.stack));
+            }
+        }
+
+        function execQueryAndUpdateUi (query) {
             exec(query)
                 .then(
                     (result) => {
                         console.log(result);
-                        if (resultDiv != undefined) {
-                            resultDiv.parentNode.removeChild(resultDiv);
-                            resultDiv = undefined;
-                        }
-                        resultDiv = document.createElement("div");
-                        resultContainer.appendChild(resultDiv);
+                        clearOutput();
 
                         for (const resultSet of result.execResult) {
                             const table = document.createElement("table");
@@ -162,37 +178,66 @@ SELECT * FROM sqlite_master;
                         }
                     },
                     (err) => {
-                        console.error(err);
-                        if (resultDiv != undefined) {
-                            resultDiv.parentNode.removeChild(resultDiv);
-                            resultDiv = undefined;
-                        }
-                        resultDiv = document.createElement("div");
-                        resultContainer.appendChild(resultDiv);
+                        onError(err);
+                    }
+                );
+        }
 
-                        {
-                            const h2 = document.createElement("h2");
-                            resultDiv.appendChild(h2);
-                            h2.appendChild(document.createTextNode("Message"));
-                            const pre = document.createElement("pre");
-                            resultDiv.appendChild(pre);
-                            pre.appendChild(document.createTextNode(err.message));
-                        }
-                        {
-                            const h2 = document.createElement("h2");
-                            resultDiv.appendChild(h2);
-                            h2.appendChild(document.createTextNode("Stack"));
-                            const pre = document.createElement("pre");
-                            resultDiv.appendChild(pre);
-                            pre.appendChild(document.createTextNode(err.stack));
-                        }
+        function submitQuery () {
+            clearOutput();
+
+            resultDiv.appendChild(document.createTextNode("Executing..."));
+
+            const query = editor.getValue();
+            console.log(query);
+            if ("localStorage" in window) {
+                localStorage.setItem("query", query);
+            }
+            execQueryAndUpdateUi(query);
+        }
+
+        function save () {
+            exportDb()
+                .then(
+                    (buffer) => {
+                        const a = document.createElement("a");
+                        document.body.appendChild(a);
+                        a.href = window.URL.createObjectURL(new Blob([buffer]));
+                        a.download = "sqlite3.db";
+                        a.onclick = function () {
+                            setTimeout(function () {
+                                window.URL.revokeObjectURL(a.href);
+                            }, 1500);
+                        };
+                        a.click();
+                    },
+                    (err) => {
+                        onError(err);
                     }
                 )
         }
-        queryInput.onkeydown = function (e) {
-            if (e.ctrlKey && e.keyCode == 13) {
-                submitQuery();
+
+        sqlite3FileInput.onchange = function load () {
+            console.log("loading...");
+            clearOutput();
+            resultDiv.appendChild(document.createTextNode("Loading..."));
+
+            const f = sqlite3FileInput.files[0];
+            console.log(f);
+            const r = new FileReader();
+            r.onload = function () {
+                console.log(r.result);
+                importDb(new Uint8Array(r.result))
+                    .then(
+                        () => {
+                            execQueryAndUpdateUi("SELECT * FROM sqlite_master");
+                        },
+                        (err) => {
+                            onError(err);
+                        }
+                    );
             }
-        };
+            r.readAsArrayBuffer(f);
+        }
     </script>
 </html>

@@ -22,6 +22,8 @@ declare global {
     interface Window {
         rawQuery : (sqlString : string) => Promise<sql.RawQueryResult>;
         exec : (sqlString : string) => Promise<{ execResult : ExecResult, rowsModified : number }>;
+        exportDb : () => Promise<Uint8Array>;
+        importDb : (dbFile : Uint8Array) => Promise<void>;
     }
 }
 
@@ -31,4 +33,12 @@ window.rawQuery = (sqlString) => pool.acquire(
 
 window.exec = (sqlString) => pool.acquire(
     connection => connection.exec(sqlString)
+);
+
+window.exportDb = () => pool.acquire(
+    connection => connection.export()
+);
+
+window.importDb = (dbFile : Uint8Array) => pool.acquire(
+    connection => connection.open(dbFile)
 );

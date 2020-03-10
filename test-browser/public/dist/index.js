@@ -51174,6 +51174,8 @@ const sqlite3Worker = new sqlite3.SqliteWorker({
 const pool = new sqlite3.Pool(sqlite3Worker);
 window.rawQuery = (sqlString) => pool.acquire(connection => connection.rawQuery(sqlString));
 window.exec = (sqlString) => pool.acquire(connection => connection.exec(sqlString));
+window.exportDb = () => pool.acquire(connection => connection.export());
+window.importDb = (dbFile) => pool.acquire(connection => connection.open(dbFile));
 
 
 /***/ })
