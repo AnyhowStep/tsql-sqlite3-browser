@@ -33,12 +33,12 @@
 
             #pre-ts-input-area {
                 display : inline-block;
-                width: 33%;
+                width: 32%;
             }
 
             #post-ts-input-area {
                 display : inline-block;
-                width: 33%;
+                width: 32%;
             }
 
             #pre-ts-input {
@@ -245,7 +245,8 @@
                 );
         }
 
-        function runContent () {
+        let allowRun = true;
+        async function runContent () {
             const preTsContent = preTsEditor.getValue();
             //console.log(preTsContent);
             const postTsContent = postTsEditor.getValue();
@@ -256,20 +257,49 @@
                 localStorage.setItem("savedPostTsContent", postTsContent);
                 localStorage.setItem("savedTsContent", tsContent);
             }
+            if (!allowRun) {
+                console.log("Please wait or refresh the page")
+                return;
+            }
+            allowRun = false;
+
+            postTsOutput.setText("Transpiling TS...");
+            const jsContent = await monaco.languages.typescript.getTypeScriptWorker()
+                .then(worker => {
+                    return worker(tsEditor.getModel().uri)
+                })
+                .then((client, a) => {
+                    return client.getEmitOutput(tsEditor.getModel().uri.toString());
+                })
+                .then(result => {
+                    console.log("emit", result);
+                    const emitFile = result.outputFiles[0];
+
+                    return emitFile.text;
+                })
+                .catch((err) => {
+                    postTsOutput.setError(err);
+                    return undefined;
+                });
+            if (jsContent == undefined) {
+                allowRun = true;
+                return;
+            }
 
             runPostTs = true;
             execQueryAndUpdateOutput(preTsContent, preTsOutput, "Executing Pre-TS query...")
                 .then(function () {
                     try {
-                        console.log("Executing TS...");
+                        postTsOutput.setText("Executing TS...");
                         window.onunhandledrejection = (evt) => {
                             console.log(evt);
                             postTsOutput.setError(evt.reason);
                             runPostTs = false;
                         };
-                        eval("{" + tsContent + "/**/}");
+                        eval("{" + jsContent + "/**/}");
                         setTimeout(
                             () => {
+                                allowRun = true;
                                 if (!runPostTs) {
                                     return;
                                 }
@@ -278,6 +308,7 @@
                             1000
                         )
                     } catch (err) {
+                        allowRun = true;
                         postTsOutput.setError(err);
                     }
                 });
