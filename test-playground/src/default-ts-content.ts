@@ -13,7 +13,10 @@ const person = sql.table("person")
         bio : sql.dtVarChar(9001),
     })
     .setAutoIncrement(columns => columns.personId)
-    .addGenerated(columns => [columns.bio]);
+    //Tells us `bio` is a GENERATED column
+    .addGenerated(columns => [columns.bio])
+    //Tells us that all columns (except generated and auto-increment) may be updated
+    .addAllMutable();
 
 pool.acquire(async (connection) => {
     //Place all database calls inside here
@@ -35,4 +38,67 @@ pool.acquire(async (connection) => {
         }
     );
     console.log(me);
+
+    await person.insertMany(
+        connection,
+        [
+            {
+                name : "Kitty",
+                description : "I love naps!"
+            },
+            {
+                name : "Shiba",
+                description : "I'm a mame shiba but don't look down on me!"
+            },
+            {
+                name : "Red",
+                description : "I wanna' be the very best!"
+            },
+        ]
+    );
+
+    //We can build a query without executing it
+    const peopleNamedWithLetterIQuery = sql.from(person)
+        .where(columns => sql.like(columns.name, "%i%", "\\"))
+        .select(columns => [
+            //Same as `SELECT *`
+            columns,
+            //We can SELECT an aliased expression
+            sql.concat(
+                "Introduction is ",
+                //Sometimes, casting returns `NULL`.
+                //We use `throwIfNull()` to remove potential nulls during compile-time,
+                //in exchange for potential throws during run-time.
+                sql.throwIfNull(sql.unsafeCastAsVarChar(
+                    sql.charLength(columns.description)
+                )),
+                " characters long"
+            ).as("descriptionMeta"),
+        ])
+        .orderBy(columns =>[
+            columns.person.name.asc(),
+        ]);
+
+    await peopleNamedWithLetterIQuery
+        .fetchAll(connection)
+        .then(console.log);
+
+    await person
+        .whereEqPrimaryKey({
+            personId : BigInt(2),
+        })
+        .updateOne(
+            connection,
+            columns => {
+                return {
+                    name : sql.concat("Ms ", sql.replace(columns.name, "i", "")),
+                };
+            }
+        );
+
+    //We may execute a previously built query multiple times
+    await peopleNamedWithLetterIQuery
+        .fetchAll(connection)
+        .then(console.log);
+
 });

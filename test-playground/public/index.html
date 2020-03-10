@@ -253,10 +253,24 @@
             execQueryAndUpdateOutput(preTsContent, preTsOutput)
                 .then(function () {
                     try {
+                        let runPostTs = true;
+                        window.onunhandledrejection = (evt) => {
+                            console.log(evt);
+                            postTsOutput.setError(evt.reason);
+                            runPostTs = false;
+                        };
                         eval("{" + tsContent + "/**/}");
 
-                        postTsOutput.setText("Executing...");
-                        execQueryAndUpdateOutput(postTsContent, postTsOutput);
+                        setTimeout(
+                            () => {
+                                if (!runPostTs) {
+                                    return;
+                                }
+                                postTsOutput.setText("Executing...");
+                                execQueryAndUpdateOutput(postTsContent, postTsOutput);
+                            },
+                            1000
+                        );
                     } catch (err) {
                         postTsOutput.setError(err);
                     }

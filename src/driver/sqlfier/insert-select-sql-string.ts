@@ -38,7 +38,18 @@ export async function insertSelectSqlString<
     //console.log(structure);
 
     const columnAliases = squill.TableUtil.columnAlias(table)
-        .sort();
+        .sort()
+        .filter(columnAlias => {
+            /**
+             * @todo handle GENERATED columns
+             */
+            //Might possibly be a GENERATED column, actually.
+            //For some reason, these don't show up in pragma table_info
+            const columnDef = structure.find(columnDef => {
+                return columnDef.name == columnAlias;
+            });
+            return columnDef != undefined;
+        });
 
     const values = columnAliases
         .map(columnAlias => {
@@ -48,6 +59,8 @@ export async function insertSelectSqlString<
                     return columnDef.name == columnAlias;
                 });
                 if (columnDef == undefined) {
+                    //Might possibly be a GENERATED column, actually.
+                    //For some reason, these don't show up in pragma table_info
                     throw new Error(`Unknown column ${table.alias}.${columnAlias}`);
                 }
                 if (columnDef.dflt_value != undefined) {
