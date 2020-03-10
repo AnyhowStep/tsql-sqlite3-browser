@@ -101,4 +101,10 @@ pool.acquire(async (connection) => {
         .fetchAll(connection)
         .then(console.log);
 
+    //Slower performance but pretty output.
+    //See sqlite3.toSql() for faster performance but ugly output.
+    console.log(
+        sqlite3.toSqlPretty(peopleNamedWithLetterIQuery)
+    );
+
 });

@@ -2927,6 +2927,53 @@ exports.tryFetchTableMeta = tryFetchTableMeta;
 
 /***/ }),
 
+/***/ "./dist/driver/sqlfier/convenience.js":
+/*!********************************************!*\
+  !*** ./dist/driver/sqlfier/convenience.js ***!
+  \********************************************/
+/*! no static exports found */
+/*! all exports used */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const squill = __webpack_require__(/*! @squill/squill */ "./node_modules/@squill/squill/dist/index.js");
+const sqlfier_1 = __webpack_require__(/*! ./sqlfier */ "./dist/driver/sqlfier/sqlfier.js");
+/**
+ * Returns an unprettified SQL string.
+ * Is fast-ish.
+ *
+ * @param ast - The AST to convert to a SQL string
+ * @see {toSqlPretty} for pretty output but slower performance.
+ */
+function toSql(ast) {
+    return squill.AstUtil.toSql(ast, sqlfier_1.sqlfier);
+}
+exports.toSql = toSql;
+/**
+ * Returns a prettified SQL string.
+ * Is slow-ish.
+ *
+ * @param ast - The AST to convert to a SQL string
+ * @see {toSql} for ugly output but faster performance.
+ */
+function toSqlPretty(ast) {
+    return squill.AstUtil.toSqlPretty(ast, sqlfier_1.sqlfier, {
+        stringTypes: [/*`""`,*/ "N''", /*"''",*/ "``", "[]", "X''", "pascal-single", "pascal-double"],
+        /**
+         * These `undefined` values should be ignored,
+         * and should not overwrite.
+         */
+        openParens: undefined,
+        closeParens: undefined,
+    });
+}
+exports.toSqlPretty = toSqlPretty;
+//# sourceMappingURL=convenience.js.map
+
+/***/ }),
+
 /***/ "./dist/driver/sqlfier/delete-sql-string.js":
 /*!**************************************************!*\
   !*** ./dist/driver/sqlfier/delete-sql-string.js ***!
@@ -2968,6 +3015,7 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
+__export(__webpack_require__(/*! ./convenience */ "./dist/driver/sqlfier/convenience.js"));
 __export(__webpack_require__(/*! ./delete-sql-string */ "./dist/driver/sqlfier/delete-sql-string.js"));
 __export(__webpack_require__(/*! ./insert-many-sql-string */ "./dist/driver/sqlfier/insert-many-sql-string.js"));
 __export(__webpack_require__(/*! ./insert-one-sql-string */ "./dist/driver/sqlfier/insert-one-sql-string.js"));
