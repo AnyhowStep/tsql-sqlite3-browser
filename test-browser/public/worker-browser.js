@@ -8192,9 +8192,9 @@ class MyBigIntPolyfill {
     }
 }
 let bigIntPolyfilled = false;
-if (typeof BigInt === undefined || forceBigIntPolyfill) {
+if (typeof BigInt === "undefined" || forceBigIntPolyfill) {
     bigIntPolyfilled = true;
-    BigInt = ((x) => new MyBigIntPolyfill(x));
+    getGlobal()["BigInt"] = ((x) => new MyBigIntPolyfill(x));
 }
 function isBigInt(x) {
     if (bigIntPolyfilled) {

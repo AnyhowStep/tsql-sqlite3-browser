@@ -29,9 +29,9 @@ class MyBigIntPolyfill {
     }
 }
 let bigIntPolyfilled = false;
-if (typeof BigInt === undefined || forceBigIntPolyfill) {
+if (typeof BigInt === "undefined" || forceBigIntPolyfill) {
     bigIntPolyfilled = true;
-    BigInt = (
+    getGlobal()["BigInt"] = (
         (x : any) => new MyBigIntPolyfill(x) as unknown as bigint
     ) as any;
 }

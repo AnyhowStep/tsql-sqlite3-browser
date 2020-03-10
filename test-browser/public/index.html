@@ -1,5 +1,24 @@
 <html>
     <head>
+        <script>
+            //Really bad BigInt polyfill
+            const MyBigInt = /** @class */ (function () {
+                function MyBigInt(value) {
+                    this.value = String(value);
+                }
+                MyBigInt.prototype.toString = function () {
+                    return this.value;
+                };
+                return MyBigInt;
+            }());
+
+            if (typeof BigInt === "undefined") {
+                console.log("Using really bad BigInt polyfill because browser does not support it")
+                window.BigInt = function (x) {
+                    return new MyBigInt(x);
+                };
+            }
+        </script>
         <script src="dist/vendors.bundle.js"></script>
         <script src="dist/index.js"></script>
         <style>
@@ -60,23 +79,6 @@ SELECT * FROM sqlite_master;
         </textarea>
     </body>
     <script>
-        //Really bad BigInt polyfill
-        if (typeof BigInt === "undefined") {
-            const MyBigInt = /** @class */ (function () {
-                function MyBigInt(value) {
-                    this.value = String(value);
-                }
-                MyBigInt.prototype.toString = function () {
-                    return this.value;
-                };
-                return MyBigInt;
-            }());
-
-            window.BigInt = function (x) {
-                return new MyBigInt(x);
-            };
-        }
-
         const defaultQuery = document.getElementById("default-query").value;
         const queryInput = document.getElementById("query-input");
         const resultContainer = document.getElementById("result-container");
@@ -182,7 +184,7 @@ SELECT * FROM sqlite_master;
                                         td.setAttribute("style", "color:#666666");
                                     } else if (typeof col == "number") {
                                         td.setAttribute("style", "color:#0000cc");
-                                    } else if (typeof col == "bigint") {
+                                    } else if (typeof col == "bigint" || col instanceof MyBigInt) {
                                         td.setAttribute("style", "color:#008800");
                                         td.appendChild(document.createTextNode("n"));
                                     } else if (typeof col == "string") {
