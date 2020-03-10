@@ -225,8 +225,16 @@
             tsEditor.setValue(defaultTsContent);
         }
 
-        function execQueryAndUpdateOutput (query, output) {
-            return exec(query)
+        let runPostTs = true;
+        function execQueryAndUpdateOutput (query, output, message) {
+            return pool
+                .acquire(connection => {
+                    if (!runPostTs) {
+                        return Promise.resolve();
+                    }
+                    output.setText(message);
+                    return connection.exec(query);
+                })
                 .then(
                     (result) => {
                         output.setResult(result);
@@ -239,9 +247,9 @@
 
         function runContent () {
             const preTsContent = preTsEditor.getValue();
-            console.log(preTsContent);
+            //console.log(preTsContent);
             const postTsContent = postTsEditor.getValue();
-            console.log(postTsContent);
+            //console.log(postTsContent);
             const tsContent = tsEditor.getValue();
             if ("localStorage" in window) {
                 localStorage.setItem("savedPreTsContent", preTsContent);
@@ -249,28 +257,26 @@
                 localStorage.setItem("savedTsContent", tsContent);
             }
 
-            preTsOutput.setText("Executing...");
-            execQueryAndUpdateOutput(preTsContent, preTsOutput)
+            runPostTs = true;
+            execQueryAndUpdateOutput(preTsContent, preTsOutput, "Executing Pre-TS query...")
                 .then(function () {
                     try {
-                        let runPostTs = true;
+                        console.log("Executing TS...");
                         window.onunhandledrejection = (evt) => {
                             console.log(evt);
                             postTsOutput.setError(evt.reason);
                             runPostTs = false;
                         };
                         eval("{" + tsContent + "/**/}");
-
                         setTimeout(
                             () => {
                                 if (!runPostTs) {
                                     return;
                                 }
-                                postTsOutput.setText("Executing...");
-                                execQueryAndUpdateOutput(postTsContent, postTsOutput);
+                                execQueryAndUpdateOutput(postTsContent, postTsOutput, "Executing Post-TS query...");
                             },
                             1000
-                        );
+                        )
                     } catch (err) {
                         postTsOutput.setError(err);
                     }

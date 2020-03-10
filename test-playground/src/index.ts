@@ -58,7 +58,7 @@ monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
   alwaysStrict : true,
   strictNullChecks : true,
 });
-console.log("typescriptVersion", monaco.languages.typescript.typescriptVersion);
+//console.log("typescriptVersion", monaco.languages.typescript.typescriptVersion);
 typeMappingContext.keys().forEach((filePath : string) => {
   //console.log("file:///node_modules/type-mapping/" + filePath.replace(/^\.\//, ""));
   monaco.languages.typescript.typescriptDefaults.addExtraLib(
