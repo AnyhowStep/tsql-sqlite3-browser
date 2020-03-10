@@ -2,7 +2,7 @@ import * as sql from "@squill/squill";
 import * as sqlite3 from "../../dist/driver";
 import {ExecResult} from "../../dist/sql-wasm/sql-wasm-debug";
 
-const worker = new Worker("/worker-browser.js");
+const worker = new Worker("worker-browser.js");
 
 const sqlite3Worker = new sqlite3.SqliteWorker({
     postMessage : worker.postMessage.bind(worker),

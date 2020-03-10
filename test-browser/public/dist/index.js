@@ -51159,7 +51159,7 @@ exports.SqliteWorker = SqliteWorker;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const sqlite3 = __webpack_require__(/*! ../../dist/driver */ "./dist/driver/index.js");
-const worker = new Worker("/worker-browser.js");
+const worker = new Worker("worker-browser.js");
 const sqlite3Worker = new sqlite3.SqliteWorker({
     postMessage: worker.postMessage.bind(worker),
     setOnMessage: (onMessage) => {
