@@ -46859,10 +46859,11 @@ class Connection {
             }, () => { });
         });
     }
-    createAggregate(functionName, init, step, finalize) {
+    createAggregate(functionName, options, init, step, finalize) {
         return this.asyncQueue.enqueue((worker) => {
             return postMessage(worker, this.allocateId(), worker_1.SqliteAction.CREATE_AGGREGATE, {
                 functionName,
+                options,
                 init: init.toString(),
                 step: step.toString(),
                 finalize: finalize.toString(),
@@ -48336,7 +48337,10 @@ async function initPolyfill(connection) {
     await connection.createFunction("FRANDOM", { isVarArg: false, isDeterministic: false }, () => {
         return Math.random();
     });
-    await connection.createAggregate("STDDEV_POP", () => {
+    await connection.createAggregate("STDDEV_POP", {
+        isVarArg: false,
+        isDeterministic: true,
+    }, () => {
         return {
             values: [],
         };
@@ -48366,7 +48370,10 @@ async function initPolyfill(connection) {
         const sumSquaredErrors = squaredErrors.reduce((sumSquaredErrors, squaredError) => sumSquaredErrors + squaredError, 0);
         return Math.sqrt(sumSquaredErrors / count);
     });
-    await connection.createAggregate("STDDEV_SAMP", () => {
+    await connection.createAggregate("STDDEV_SAMP", {
+        isVarArg: false,
+        isDeterministic: true,
+    }, () => {
         return {
             values: [],
         };
@@ -48399,7 +48406,10 @@ async function initPolyfill(connection) {
         const sumSquaredErrors = squaredErrors.reduce((sumSquaredErrors, squaredError) => sumSquaredErrors + squaredError, 0);
         return Math.sqrt(sumSquaredErrors / (count - 1));
     });
-    await connection.createAggregate("VAR_POP", () => {
+    await connection.createAggregate("VAR_POP", {
+        isVarArg: false,
+        isDeterministic: true,
+    }, () => {
         return {
             values: [],
         };
@@ -48429,7 +48439,10 @@ async function initPolyfill(connection) {
         const sumSquaredErrors = squaredErrors.reduce((sumSquaredErrors, squaredError) => sumSquaredErrors + squaredError, 0);
         return sumSquaredErrors / count;
     });
-    await connection.createAggregate("VAR_SAMP", () => {
+    await connection.createAggregate("VAR_SAMP", {
+        isVarArg: false,
+        isDeterministic: true,
+    }, () => {
         return {
             values: [],
         };

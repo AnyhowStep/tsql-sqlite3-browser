@@ -1476,7 +1476,7 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
         return this;
     };
 
-    Database.prototype["create_aggregate"] = function create_aggregate(name, init, step, finalize) {
+    Database.prototype["create_aggregate"] = function create_aggregate(name, options, init, step, finalize) {
         let state = undefined;
         const wrapped_step = function(cx, argc, argv) {
           if (state === undefined) {
@@ -1514,11 +1514,24 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
             //If this parameter is -1,
             //then the SQL function or aggregate may take any number of arguments between
             //0 and the limit set by sqlite3_limit(SQLITE_LIMIT_FUNCTION_ARG)
+            (
+              options.isVarArg === true ?
+              -1 :
+              step.length-1
+            ),
             /**
-             * @todo Implement vararg aggregate function
+             * The fourth parameter may optionally be ORed with SQLITE_DETERMINISTIC to signal that
+             * the function will always return the same result given the same inputs within a single SQL statement.
              */
-            step.length - 1,
-            SQLITE_UTF8,
+            //eTextRep
+            (
+              SQLITE_UTF8 |
+              (
+                options.isDeterministic === true ?
+                /** SQLITE_DETERMINISTIC */0x000000800 :
+                0
+              )
+            ),
             //pApp
             0,
             //xFunc
@@ -8367,7 +8380,7 @@ function initWorker(postMessage) {
                 const init = eval("(" + data.init + ")");
                 const step = eval("(" + data.step + ")");
                 const finalize = eval("(" + data.finalize + ")");
-                db.create_aggregate(data.functionName, init, step, finalize);
+                db.create_aggregate(data.functionName, data.options, init, step, finalize);
                 postMessage({
                     id: data.id,
                     action: data.action,

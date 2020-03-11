@@ -174,6 +174,12 @@ export interface Database {
     ) : this;
     create_aggregate<StateT> (
         functionName : string,
+        options : {
+            //Defaults to `false`
+            isVarArg? : boolean,
+            //Defaults to `false`
+            isDeterministic? : boolean,
+        },
         init : () => StateT,
         step : (state : StateT, ...args : unknown[]) => void,
         finalize : (state : StateT) => unknown

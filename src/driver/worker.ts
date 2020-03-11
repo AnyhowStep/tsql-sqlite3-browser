@@ -112,6 +112,10 @@ export type ToSqliteMessage = DistributeMerge<
         | {
             action : SqliteAction.CREATE_AGGREGATE,
             functionName : string,
+            options : {
+                isVarArg? : boolean,
+                isDeterministic? : boolean,
+            },
             /**
              * ```ts
              * (() => { return { count : 0 }; }).toString()

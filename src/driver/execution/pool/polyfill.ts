@@ -249,6 +249,10 @@ export async function initPolyfill (
     });
     await connection.createAggregate(
         "STDDEV_POP",
+        {
+            isVarArg : false,
+            isDeterministic : true,
+        },
         () => {
             return {
                 values : [] as number[],
@@ -291,6 +295,10 @@ export async function initPolyfill (
     );
     await connection.createAggregate(
         "STDDEV_SAMP",
+        {
+            isVarArg : false,
+            isDeterministic : true,
+        },
         () => {
             return {
                 values : [] as number[],
@@ -336,6 +344,10 @@ export async function initPolyfill (
     );
     await connection.createAggregate(
         "VAR_POP",
+        {
+            isVarArg : false,
+            isDeterministic : true,
+        },
         () => {
             return {
                 values : [] as number[],
@@ -376,6 +388,10 @@ export async function initPolyfill (
     );
     await connection.createAggregate(
         "VAR_SAMP",
+        {
+            isVarArg : false,
+            isDeterministic : true,
+        },
         () => {
             return {
                 values : [] as number[],

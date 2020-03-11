@@ -204,6 +204,7 @@ function initWorker (
                 const finalize = eval("(" + data.finalize + ")");
                 db.create_aggregate(
                     data.functionName,
+                    data.options,
                     init,
                     step,
                     finalize

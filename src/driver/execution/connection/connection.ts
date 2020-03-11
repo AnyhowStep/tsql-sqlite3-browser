@@ -496,6 +496,12 @@ export class Connection implements
 
     createAggregate<StateT> (
         functionName : string,
+        options : {
+            //Defaults to `false`
+            isVarArg? : boolean,
+            //Defaults to `false`
+            isDeterministic? : boolean,
+        },
         init : () => StateT,
         step : (state : StateT, ...args : unknown[]) => void,
         finalize : (state : StateT|undefined) => unknown
@@ -507,6 +513,7 @@ export class Connection implements
                 SqliteAction.CREATE_AGGREGATE,
                 {
                     functionName,
+                    options,
                     init : init.toString(),
                     step : step.toString(),
                     finalize : finalize.toString(),
