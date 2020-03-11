@@ -89,12 +89,24 @@ export async function tryFetchTableMeta (
         }
         throw new Error(`Cannot find column definition for ${tableAlias}.${columnAlias}`);
     }
+    /**
+     * @todo Improve
+     * This regex approach is brittle. Very easy to craft counterexamples
+     */
     function isAutoIncrement (columnAlias : string) {
         return /AUTOINCREMENT/i.test(getColumnDefSql(columnAlias));
     }
+    /**
+     * @todo Improve
+     * This regex approach is brittle. Very easy to craft counterexamples
+     */
     function isUnique (columnAlias : string) {
         return /UNIQUE/i.test(getColumnDefSql(columnAlias));
     }
+    /**
+     * @todo Improve
+     * This regex approach is brittle. Very easy to craft counterexamples
+     */
     function isPrimaryKey (columnAlias : string) {
         return /PRIMARY\s+KEY/i.test(getColumnDefSql(columnAlias));
     }
@@ -189,6 +201,13 @@ export async function tryFetchTableMeta (
         };
 
         obj.isAutoIncrement = isAutoIncrement(obj.name);
+        /**
+         * @todo
+         *
+         * Should fetch unique indexes, too...
+         * Unique columns/candidate keys may be created separately with
+         * `CREATE UNIQUE INDEX myUniqueIndex ON myTable(myColumn0, myColumn1, ...);`
+         */
         obj.isUnique = isUnique(obj.name);
         obj.isPrimaryKey = isPrimaryKey(obj.name);
 
