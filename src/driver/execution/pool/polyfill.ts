@@ -15,7 +15,7 @@ export async function initPolyfill (
 ) {
     await initDecimalPolyfill(connection);
     await initBigIntPolyfill(connection);
-    await connection.createFunction("ASCII", (x) => {
+    await connection.createFunction("ASCII", { isVarArg : false, isDeterministic : true }, (x) => {
         if (typeof x == "string") {
             if (x == "") {
                 return 0;
@@ -25,7 +25,7 @@ export async function initPolyfill (
             throw new Error(`ASCII only implemented for string`);
         }
     });
-    await connection.createFunction("BIN", (x) => {
+    await connection.createFunction("BIN", { isVarArg : false, isDeterministic : true }, (x) => {
         if (isBigInt(x)) {
             const str = x.toString();
             if (str[0] == "-") {
@@ -57,14 +57,14 @@ export async function initPolyfill (
             throw new Error(`BIN only implemented for bigint`);
         }
     });
-    await connection.createVarArgFunction("CONCAT_WS", (separator, ...args) => {
+    await connection.createFunction("CONCAT_WS", { isVarArg : true, isDeterministic : true }, (separator, ...args) => {
         if (typeof separator == "string") {
             return args.filter(arg => arg !== null).join(separator);
         } else {
             throw new Error(`CONCAT_WS only implemented for string`);
         }
     });
-    await connection.createFunction("FROM_BASE64", (x) => {
+    await connection.createFunction("FROM_BASE64", { isVarArg : false, isDeterministic : true }, (x) => {
         if (typeof x == "string") {
             const result = new Uint8Array(
                 atob(x).split("").filter(s => s != "").map(s => s.charCodeAt(0))
@@ -74,7 +74,7 @@ export async function initPolyfill (
             throw new Error(`FROM_BASE64 only implemented for string`);
         }
     });
-    await connection.createFunction("LPAD", (str, len, pad) => {
+    await connection.createFunction("LPAD", { isVarArg : false, isDeterministic : true }, (str, len, pad) => {
         if (
             typeof str == "string" &&
             isBigInt(len) &&
@@ -91,7 +91,7 @@ export async function initPolyfill (
             throw new Error(`LPAD only implemented for (string, bigint, string)`);
         }
     });
-    await connection.createFunction("RPAD", (str, len, pad) => {
+    await connection.createFunction("RPAD", { isVarArg : false, isDeterministic : true }, (str, len, pad) => {
         if (
             typeof str == "string" &&
             isBigInt(len) &&
@@ -108,7 +108,7 @@ export async function initPolyfill (
             throw new Error(`RPAD only implemented for (string, bigint, string)`);
         }
     });
-    await connection.createFunction("REPEAT", (str, count) => {
+    await connection.createFunction("REPEAT", { isVarArg : false, isDeterministic : true }, (str, count) => {
         if (
             typeof str == "string" &&
             isBigInt(count)
@@ -121,7 +121,7 @@ export async function initPolyfill (
             throw new Error(`REPEAT only implemented for (string, bigint)`);
         }
     });
-    await connection.createFunction("REVERSE", (str) => {
+    await connection.createFunction("REVERSE", { isVarArg : false, isDeterministic : true }, (str) => {
         if (
             typeof str == "string"
         ) {
@@ -130,7 +130,7 @@ export async function initPolyfill (
             throw new Error(`REVERSE only implemented for (string)`);
         }
     });
-    await connection.createFunction("TO_BASE64", (blob) => {
+    await connection.createFunction("TO_BASE64", { isVarArg : false, isDeterministic : true }, (blob) => {
         if (
             blob instanceof Uint8Array
         ) {
@@ -139,7 +139,7 @@ export async function initPolyfill (
             throw new Error(`TO_BASE64 only implemented for (Uint8Array)`);
         }
     });
-    await connection.createFunction("UNHEX", (x) => {
+    await connection.createFunction("UNHEX", { isVarArg : false, isDeterministic : true }, (x) => {
         if (typeof x == "string") {
             const matches = x.match(/.{2}/g);
             if (matches == undefined) {
@@ -156,32 +156,36 @@ export async function initPolyfill (
             throw new Error(`UNHEX only implemented for string`);
         }
     });
-    await connection.createFunction("FLOOR", (x) => {
+    await connection.createFunction("FLOOR", { isVarArg : false, isDeterministic : true }, (x) => {
         if (isBigInt(x)) {
             return x;
         } else if (typeof x == "number") {
             return Math.floor(x);
+        } else if (x === null) {
+            return null;
         } else {
-            throw new Error(`Can only FLOOR bigint or double`);
+            throw new Error(`Can only FLOOR bigint, double or null; received ${typeof x}`);
         }
     });
-    await connection.createFunction("CEILING", (x) => {
+    await connection.createFunction("CEILING", { isVarArg : false, isDeterministic : true }, (x) => {
         if (isBigInt(x)) {
             return x;
         } else if (typeof x == "number") {
             return Math.ceil(x);
+        } else if (x === null) {
+            return null;
         } else {
-            throw new Error(`Can only CEILING bigint or double`);
+            throw new Error(`Can only CEILING bigint, double or null; received ${typeof x}`);
         }
     });
-    await connection.createFunction("CBRT", (x) => {
+    await connection.createFunction("CBRT", { isVarArg : false, isDeterministic : true }, (x) => {
         if (typeof x == "number") {
             return Math.cbrt(x);
         } else {
             throw new Error(`CBRT(${typeof x}) not implmented`);
         }
     });
-    await connection.createFunction("COT", (x) => {
+    await connection.createFunction("COT", { isVarArg : false, isDeterministic : true }, (x) => {
         if (typeof x == "number") {
             const divisor = Math.cos(x);
             const dividend = Math.sin(x);
@@ -194,7 +198,7 @@ export async function initPolyfill (
             throw new Error(`COT(${typeof x}) not implmented`);
         }
     });
-    await connection.createFunction("LN", (x) => {
+    await connection.createFunction("LN", { isVarArg : false, isDeterministic : true }, (x) => {
         if (typeof x == "number") {
             if (x == 0) {
                 return null;
@@ -205,7 +209,7 @@ export async function initPolyfill (
             throw new Error(`LN(${typeof x}) not implmented`);
         }
     });
-    await connection.createFunction("LOG", (x, y) => {
+    await connection.createFunction("LOG", { isVarArg : false, isDeterministic : true }, (x, y) => {
         if (typeof x == "number" && typeof y == "number") {
             if (x <= 0 || x == 1) {
                 return null;
@@ -218,7 +222,7 @@ export async function initPolyfill (
             throw new Error(`LOG(${typeof x}, ${typeof y}) not implmented`);
         }
     });
-    await connection.createFunction("LOG2", (x) => {
+    await connection.createFunction("LOG2", { isVarArg : false, isDeterministic : true }, (x) => {
         if (typeof x == "number") {
             if (x == 0) {
                 return null;
@@ -229,7 +233,7 @@ export async function initPolyfill (
             throw new Error(`LOG2(${typeof x}) not implmented`);
         }
     });
-    await connection.createFunction("LOG10", (x) => {
+    await connection.createFunction("LOG10", { isVarArg : false, isDeterministic : true }, (x) => {
         if (typeof x == "number") {
             if (x == 0) {
                 return null;
@@ -240,7 +244,7 @@ export async function initPolyfill (
             throw new Error(`LOG10(${typeof x}) not implmented`);
         }
     });
-    await connection.createFunction("FRANDOM", () => {
+    await connection.createFunction("FRANDOM", { isVarArg : false, isDeterministic : false }, () => {
         return Math.random();
     });
     await connection.createAggregate(

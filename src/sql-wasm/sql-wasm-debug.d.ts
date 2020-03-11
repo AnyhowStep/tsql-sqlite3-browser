@@ -162,7 +162,16 @@ export interface Database {
     /**
      * Register a custom function with SQLite
      */
-    create_function (functionName : string, options : { isVarArg? : boolean, }, impl : (...args : unknown[]) => unknown) : this;
+    create_function (
+        functionName : string,
+        options : {
+            //Defaults to `false`
+            isVarArg? : boolean,
+            //Defaults to `false`
+            isDeterministic? : boolean,
+        },
+        impl : (...args : unknown[]) => unknown
+    ) : this;
     create_aggregate<StateT> (
         functionName : string,
         init : () => StateT,

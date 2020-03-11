@@ -1400,7 +1400,19 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
               -1 :
               func.length
             ),
-            SQLITE_UTF8,
+            /**
+             * The fourth parameter may optionally be ORed with SQLITE_DETERMINISTIC to signal that
+             * the function will always return the same result given the same inputs within a single SQL statement.
+             */
+            //eTextRep
+            (
+              SQLITE_UTF8 |
+              (
+                options.isDeterministic === true ?
+                /** SQLITE_DETERMINISTIC */0x000000800 :
+                0
+              )
+            ),
             0,
             func_ptr,
             0,

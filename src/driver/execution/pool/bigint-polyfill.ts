@@ -64,7 +64,7 @@ export async function initBigIntPolyfill (
     await connection.createGlobalJsFunction("bigIntMultiply", bigIntMultiply);
     await connection.createGlobalJsFunction("bigIntDivide", bigIntDivide);
 
-    await connection.createVarArgFunction("bigint_add", (...arr) => {
+    await connection.createFunction("bigint_add", { isVarArg : true, isDeterministic : true }, (...arr) => {
         if (arr.length == 0) {
             return BigInt(0);
         }
@@ -94,14 +94,14 @@ export async function initBigIntPolyfill (
             sum
         );
     });
-    await connection.createFunction("bigint_sub", (a, b) => {
+    await connection.createFunction("bigint_sub", { isVarArg : false, isDeterministic : true }, (a, b) => {
         if (!isBigInt(a) || !isBigInt(b)) {
             throw new Error(`Cannot subtract non-bigint`);
         }
 
         return bigIntSubtract(a, b);
     });
-    await connection.createVarArgFunction("bigint_mul", (...arr) => {
+    await connection.createFunction("bigint_mul", { isVarArg : true, isDeterministic : true }, (...arr) => {
         if (arr.length == 0) {
             return BigInt(1);
         }
@@ -131,13 +131,13 @@ export async function initBigIntPolyfill (
             product
         );
     });
-    await connection.createFunction("bigint_neg", (a) => {
+    await connection.createFunction("bigint_neg", { isVarArg : false, isDeterministic : true }, (a) => {
         if (!isBigInt(a)) {
             throw new Error(`Cannot unary minus non-bigint`);
         }
         return bigIntUnaryMinus(a);
     });
-    await connection.createFunction("bigint_div", (a, b) => {
+    await connection.createFunction("bigint_div", { isVarArg : false, isDeterministic : true }, (a, b) => {
         if (!isBigInt(a) || !isBigInt(b)) {
             throw new Error(`Cannot divide non-bigint ${typeof a}/${typeof b}`);
         }

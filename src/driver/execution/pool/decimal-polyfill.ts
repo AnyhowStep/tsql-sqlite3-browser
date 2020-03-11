@@ -15,7 +15,7 @@ export async function initDecimalPolyfill (
 
     await connection.createGlobalJsFunction("tryParseFixedPoint", tryParseFixedPoint);
 
-    await connection.createFunction("decimal_ctor", (x, precision, scale) => {
+    await connection.createFunction("decimal_ctor", { isVarArg : false, isDeterministic : true }, (x, precision, scale) => {
         if (
             !isBigInt(precision) ||
             !isBigInt(scale)
