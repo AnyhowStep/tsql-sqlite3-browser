@@ -38,7 +38,16 @@ export async function insertSelectSqlString<
     //console.log(structure);
 
     const columnAliases = squill.TableUtil.columnAlias(table)
-        .sort();
+        .sort()
+        .filter(columnAlias => {
+            const columnDef = structure.find(columnDef => {
+                return columnDef.name == columnAlias;
+            });
+            if (columnDef == undefined) {
+                throw new Error(`Unknown column ${table.alias}.${columnAlias}`);
+            }
+            return columnDef.generationExpression == undefined;
+        });
 
     const values = columnAliases
         .map(columnAlias => {
