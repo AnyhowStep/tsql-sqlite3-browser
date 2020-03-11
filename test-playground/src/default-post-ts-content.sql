@@ -8,6 +8,6 @@ VALUES
 
 SELECT * FROM person;
 
-pragma table_info(person);
+pragma table_xinfo(person);
 
 SELECT * FROM sqlite_master;

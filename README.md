@@ -41,9 +41,6 @@ const sqlite3Worker = new sqlite3.SqliteWorker({
     setOnMessage : (onMessage) => {
         myWorker.on("message", (data) => {
             onMessage(data);
-            if (data.action == sqlite3.SqliteAction.CLOSE) {
-                myWorker.terminate();
-            }
         });
     },
 });
@@ -148,6 +145,11 @@ await pool
 //Gets a Uint8Array which contains the entire database
 await pool
     .acquire(connection => connection.export());
+
+//The pool cannot be used anymore after this
+await pool.disconnect();
+//Be sure to not leak workers!
+await myWorker.terminate();
 
 ```
 

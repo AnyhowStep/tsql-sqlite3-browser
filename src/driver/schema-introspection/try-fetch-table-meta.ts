@@ -46,8 +46,9 @@ export async function tryFetchTableMeta (
 ) : Promise<Sqlite3TableMeta|undefined> {
     const sql = await sqlite_master
         .setSchemaName(schemaAlias)
-        .whereEqPrimaryKey({
+        .whereEqSuperKey({
             name : tableAlias,
+            type : "table",
         })
         .fetchValue(
             connection,
@@ -64,21 +65,25 @@ export async function tryFetchTableMeta (
     //Modified version of
     //http://afoucal.free.fr/index.php/2009/01/26/get-default-value-and-unique-attribute-field-sqlite-database-using-air/
     const allColumnDefSql = sql.replace(/^CREATE\s+\w+\s+(("\w+"|\w+)|\[(.+)\])\s+(\(|AS|)/im , "");
-    function getColumnDefSqlImpl (columnAlias : string) {
-        const columnRegex = new RegExp(columnAlias + "(.*?)(,|\r|$)", "m");
+    function getColumnDefSqlImpl (columnAlias : string, untilEnd : boolean) {
+        const columnRegex = new RegExp(columnAlias + "(\\s*\\w+)(.*?)(,|\r|$)", "m");
 
         const columnDefSqlMatch = allColumnDefSql.match(columnRegex);
         if (columnDefSqlMatch == undefined) {
             return undefined;
         }
-        return columnDefSqlMatch[1];
+        if (untilEnd) {
+            return allColumnDefSql.substr(columnDefSqlMatch.index!);
+        } else {
+            return columnDefSqlMatch[1]+columnDefSqlMatch[2];
+        }
     }
-    function getColumnDefSql (columnAlias : string) {
-        const resultQuoted = getColumnDefSqlImpl(squill.escapeIdentifierWithDoubleQuotes(columnAlias));
+    function getColumnDefSql (columnAlias : string, untilEnd : boolean = false) {
+        const resultQuoted = getColumnDefSqlImpl(squill.escapeIdentifierWithDoubleQuotes(columnAlias), untilEnd);
         if (resultQuoted != undefined) {
             return resultQuoted;
         }
-        const resultUnquoted = getColumnDefSqlImpl(columnAlias);
+        const resultUnquoted = getColumnDefSqlImpl(columnAlias, untilEnd);
         if (resultUnquoted != undefined) {
             return resultUnquoted;
         }
@@ -93,11 +98,58 @@ export async function tryFetchTableMeta (
     function isPrimaryKey (columnAlias : string) {
         return /PRIMARY\s+KEY/i.test(getColumnDefSql(columnAlias));
     }
+    /*
+    function getGenerationExpression (columnAlias : string) {
+        const columnDefSql = getColumnDefSql(columnAlias, /** untilEnd * /true);
+        const match = columnDefSql.match(/\s+AS\s*(\((.|\n)+)/im)
+        if (match == undefined) {
+            return undefined;
+        }
+        //Should start with open parentheses
+        const rawGenerationExpression = match[1];
 
+        let parenthesesCount = 0;
+        let inString = false;
+
+        for (let i=0; i<rawGenerationExpression.length; ++i) {
+            const cur = rawGenerationExpression[i];
+            if (inString) {
+                if (cur == "'") {
+                    if (rawGenerationExpression[i+1] == "'") {
+                        ++i;
+                    } else {
+                        inString = false;
+                    }
+                }
+            } else {
+                if (cur == "'") {
+                    inString = true;
+                } else if (cur == "(") {
+                    ++parenthesesCount;
+                } else if (cur == ")") {
+                    --parenthesesCount;
+                    if (parenthesesCount == 0) {
+                        return rawGenerationExpression.substr(0, i+1);
+                    }
+                }
+            }
+        }
+        throw new Error(`Could not parse generation expression for ${tableAlias}.${columnAlias}`)
+    }
+    */
     let constraintSql = allColumnDefSql;
 
+    /**
+     * ```sql
+     *  -- This will not return the identifiers of GENERATED columns!
+     *  pragma table_info()
+     *
+     *  -- Use this instead!
+     *  pragma table_xinfo()
+     * ```
+     */
     const {execResult} = await connection
-        .exec(`pragma table_info(${squill.escapeIdentifierWithDoubleQuotes(tableAlias)})`);
+        .exec(`pragma table_xinfo(${squill.escapeIdentifierWithDoubleQuotes(tableAlias)})`);
     if (execResult.length != 1) {
         throw new Error(`Expected to fetch table info`);
     }
@@ -120,6 +172,10 @@ export async function tryFetchTableMeta (
             notnull : 1n|0n,
             dflt_value : string|null,
             pk : 1n|0n,
+            //Values I've only seen 0n and 2n.
+            //2n being a generated column.
+            //I think 1n is for hidden columns in virtual tables.
+            hidden : 0n|1n|2n,
 
             //We will need to init these values ourselves
             isAutoIncrement : boolean,
@@ -142,9 +198,18 @@ export async function tryFetchTableMeta (
             obj.dflt_value :
             undefined;
         /**
-         * @todo
+         * @todo Support getting the generationExpression.
+         * For now, it'll take too much effort to implement this.
+         *
+         * @see {@link https://stackoverflow.com/questions/60632730/extracting-the-expression-of-a-generated-column-in-sqlite-3-31}
          */
-        obj.generationExpression = undefined;
+        obj.generationExpression = obj.hidden.toString() == "2" ?
+            /**
+             * For now, return an empty string...
+             * We can't get the generation expression yet =(
+             */
+            "" :
+            undefined;
 
         const columnDef = getColumnDefSql(obj.name);
         constraintSql = constraintSql.replace(columnDef, "");
