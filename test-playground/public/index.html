@@ -19,6 +19,7 @@
                 };
             }
         </script>
+        <script src="https://unpkg.com/lz-string@1.4.4/libs/lz-string.min.js"></script>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/codemirror.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/codemirror.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.46.0/mode/sql/sql.min.js"></script>
@@ -190,7 +191,49 @@
             }
         });
 
-        if ("localStorage" in window) {
+        const locationHashObj = document.location.hash.split("#")
+            .filter(s => s != "")
+            .reduce(
+                (memo, str) => {
+                    const forwardSlashIndex = str.indexOf("/");
+                    if (forwardSlashIndex < 0) {
+                        return memo;
+                    }
+                    const key = str.substr(0, forwardSlashIndex);
+                    const rawValue = str.substr(forwardSlashIndex+1);
+                    //Fallback incase there is an extra level of decoding:
+                    //https://gitter.im/Microsoft/TypeScript?at=5dc478ab9c39821509ff189a
+                    let value = LZString.decompressFromEncodedURIComponent(rawValue);
+                    if (!value) {
+                        value = LZString.decompressFromEncodedURIComponent(decodeURIComponent(rawValue));
+                    }
+                    if (value) {
+                        memo[key] = value;
+                    } else {
+                        memo[key] = "";
+                    }
+                    return memo;
+                },
+                {}
+            );
+
+        if (("pre-ts" in locationHashObj) || ("ts" in locationHashObj) || ("post-ts" in locationHashObj)) {
+            preTsEditor.setValue(
+                locationHashObj["pre-ts"] == undefined ?
+                "" :
+                locationHashObj["pre-ts"]
+            );
+            tsEditor.setValue(
+                locationHashObj["ts"] == undefined ?
+                "" :
+                locationHashObj["ts"]
+            );
+            postTsEditor.setValue(
+                locationHashObj["post-ts"] == undefined ?
+                "" :
+                locationHashObj["post-ts"]
+            );
+        } else if ("localStorage" in window) {
             const savedPreTsContent = localStorage.getItem("savedPreTsContent");
             if (savedPreTsContent == undefined) {
                 preTsEditor.setValue(defaultPreTsContent);
@@ -252,6 +295,11 @@
             const postTsContent = postTsEditor.getValue();
             //console.log(postTsContent);
             const tsContent = tsEditor.getValue();
+            document.location.hash = [
+                "#pre-ts/", LZString.compressToEncodedURIComponent(preTsContent),
+                "#ts/", LZString.compressToEncodedURIComponent(tsContent),
+                "#post-ts/", LZString.compressToEncodedURIComponent(postTsContent),
+            ].join("");
             if ("localStorage" in window) {
                 localStorage.setItem("savedPreTsContent", preTsContent);
                 localStorage.setItem("savedPostTsContent", postTsContent);
