@@ -48239,8 +48239,11 @@ async function initPolyfill(connection) {
         else if (typeof x == "number") {
             return Math.floor(x);
         }
+        else if (x === null) {
+            return null;
+        }
         else {
-            throw new Error(`Can only FLOOR bigint or double`);
+            throw new Error(`Can only FLOOR bigint, double or null; received ${typeof x}`);
         }
     });
     await connection.createFunction("CEILING", { isVarArg: false, isDeterministic: true }, (x) => {
@@ -48250,8 +48253,11 @@ async function initPolyfill(connection) {
         else if (typeof x == "number") {
             return Math.ceil(x);
         }
+        else if (x === null) {
+            return null;
+        }
         else {
-            throw new Error(`Can only CEILING bigint or double`);
+            throw new Error(`Can only CEILING bigint, double or null; received ${typeof x}`);
         }
     });
     await connection.createFunction("CBRT", { isVarArg: false, isDeterministic: true }, (x) => {
