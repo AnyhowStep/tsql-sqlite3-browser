@@ -2,7 +2,8 @@ language: node_js
 
 node_js:
   - 'node'
-  - '11'
+  # - '11' Removing node 11 from testing until I find the time to make travis run different tests for different environments to avoid timing out
+  # It's not difficult. I'm just lazy
   - '12'
 
 branches:

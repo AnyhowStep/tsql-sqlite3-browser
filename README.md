@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/AnyhowStep/tsql-sqlite3-browser.svg?branch=master)](https://travis-ci.com/AnyhowStep/tsql-sqlite3-browser)
+
 ### `@squill/sqlite3-browser`
 
 At the moment, written with SQLite 3.31 in mind.
