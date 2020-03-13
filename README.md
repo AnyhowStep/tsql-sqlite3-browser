@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/AnyhowStep/tsql-sqlite3-browser.svg?branch=master)](https://travis-ci.com/AnyhowStep/tsql-sqlite3-browser)
+[![Build Status](https://travis-ci.com/AnyhowStep/tsql-sqlite3-browser.svg?branch=master)](https://travis-ci.com/AnyhowStep/tsql-sqlite3-browser) [![npm version](https://badge.fury.io/js/%40squill%2Fsqlite3-browser.svg)](https://badge.fury.io/js/%40squill%2Fsqlite3-browser)
 
 ### `@squill/sqlite3-browser`
 
