@@ -211,6 +211,16 @@ export async function tryFetchTableMeta (
             generationExpression : string|undefined,
         };
 
+        /**
+         * Hack to get bigint for bigint polyfill,
+         * since we got these values from `exec()`
+         * without a data mapper.
+         */
+        obj.cid = BigInt(obj.cid);
+        obj.notnull = BigInt(obj.notnull);
+        obj.pk = BigInt(obj.pk);
+        obj.hidden = BigInt(obj.hidden);
+
         obj.isAutoIncrement = isAutoIncrement(obj.name);
         /**
          * @todo

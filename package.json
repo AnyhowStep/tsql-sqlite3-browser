@@ -1,6 +1,6 @@
 {
   "name": "@squill/sqlite3-browser",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A SQLite3 query-builder/ORM",
   "main": "dist/driver/index.js",
   "types": "dist/driver/index.d.ts",
@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "test": "ts-node -P ./test/run-time/tsconfig.json -r ./test/run-time/tape-stream.ts -r ./test/run-time/bluebird-promise.ts",
+    "test-bigint-polyfill": "ts-node -P ./test/run-time/tsconfig.json -r ./test/run-time/tape-stream.ts -r ./test/run-time/bigint-polyfill.ts -r ./test/run-time/bluebird-promise.ts",
     "clean": "rm -r ./dist || true",
     "build-worker-browser": "./build-worker-browser.sh",
     "build-worker-node": "./build-worker-node.sh",
