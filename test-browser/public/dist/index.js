@@ -45762,8 +45762,11 @@ exports.whereNullSafeEq = whereNullSafeEq;
 Object.defineProperty(exports, "__esModule", { value: true });
 const where_clause_1 = __webpack_require__(/*! ../../../where-clause */ "../tsql/dist/where-clause/index.js");
 const query_impl_1 = __webpack_require__(/*! ../../query-impl */ "../tsql/dist/unified-query/query-impl.js");
+const correlate_1 = __webpack_require__(/*! ./correlate */ "../tsql/dist/unified-query/util/operation/correlate.js");
 function where(query, whereDelegate) {
-    const whereClause = where_clause_1.WhereClauseUtil.where(query.fromClause, query.whereClause, whereDelegate);
+    const whereClause = where_clause_1.WhereClauseUtil.where(query.fromClause, query.whereClause, (columns) => {
+        return whereDelegate(columns, correlate_1.correlate(query));
+    });
     const { fromClause, selectClause, limitClause, compoundQueryClause, compoundQueryLimitClause, mapDelegate, groupByClause, havingClause, orderByClause, compoundQueryOrderByClause, isDistinct, } = query;
     const result = new query_impl_1.Query({
         fromClause,
@@ -49046,6 +49049,18 @@ __export(__webpack_require__(/*! ./try-fetch-table-meta */ "./dist/driver/schema
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const squill = __webpack_require__(/*! @squill/squill */ "../tsql/dist/index.js");
+/**
+ * This table is all kinds of messed up.
+ *
+ * This thrwos a "column not found" error... When the column clearly exists.
+ * https://github.com/AnyhowStep/tsql-sqlite3-browser/issues/5
+ * ```sql
+ *  SELECT
+ *      sqlite_master.sql
+ *  FROM
+ *      temp.sqlite_master;
+ * ```
+ */
 exports.sqlite_master = squill.table("sqlite_master")
     .addColumns({
     //table, index
@@ -49113,14 +49128,20 @@ async function tryFetchSchemaMeta(connection, rawSchemaAlias) {
         constants_1.DEFAULT_SCHEMA_NAME :
         rawSchemaAlias);
     const tables = await squill
-        .from(sqlite_master_1.sqlite_master
-        .setSchemaName(schemaAlias))
+        .from(
+    /**
+     * Hacky workaround for SQLite bug.
+     * https://github.com/AnyhowStep/tsql-sqlite3-browser/issues/5
+     */
+    sqlite_master_1.sqlite_master
+        .setSchemaName(schemaAlias)
+        .as("x"))
         .whereEq(columns => columns.type, "table")
         .selectValue(columns => columns.name)
         .map(async (row) => {
-        const tableMeta = await try_fetch_table_meta_1.tryFetchTableMeta(connection, schemaAlias, row.sqlite_master.name);
+        const tableMeta = await try_fetch_table_meta_1.tryFetchTableMeta(connection, schemaAlias, row.x.name);
         if (tableMeta == undefined) {
-            throw new Error(`Table ${squill.pascalStyleEscapeString(schemaAlias)}.${squill.pascalStyleEscapeString(row.sqlite_master.name)} does not exist`);
+            throw new Error(`Table ${squill.pascalStyleEscapeString(schemaAlias)}.${squill.pascalStyleEscapeString(row.x.name)} does not exist`);
         }
         else {
             return tableMeta;
@@ -49152,13 +49173,19 @@ const tm = __webpack_require__(/*! type-mapping */ "./node_modules/type-mapping/
 const squill = __webpack_require__(/*! @squill/squill */ "../tsql/dist/index.js");
 const sqlite_master_1 = __webpack_require__(/*! ./sqlite-master */ "./dist/driver/schema-introspection/sqlite-master.js");
 async function tryFetchTableMeta(connection, schemaAlias, tableAlias) {
-    const sql = await sqlite_master_1.sqlite_master
+    const sql = await squill
+        .from(
+    /**
+     * Hacky workaround for SQLite bug.
+     * https://github.com/AnyhowStep/tsql-sqlite3-browser/issues/5
+     */
+    sqlite_master_1.sqlite_master
         .setSchemaName(schemaAlias)
-        .whereEqSuperKey({
-        name: tableAlias,
-        type: "table",
-    })
-        .fetchValue(connection, columns => columns.sql)
+        .as("x"))
+        .whereEq(columns => columns.name, tableAlias)
+        .whereEq(columns => columns.type, "table")
+        .select(columns => [columns.sql])
+        .fetchValue(connection)
         .orUndefined();
     if (sql === undefined) {
         return undefined;

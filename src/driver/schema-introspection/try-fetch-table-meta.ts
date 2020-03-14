@@ -10,6 +10,7 @@ export interface Sqlite3ColumnMeta {
     notnull : 1n|0n,
     dflt_value : string|null,
     pk : 1n|0n,
+    hidden : bigint,
 
     //We will need to init these values ourselves
     isAutoIncrement : boolean,
@@ -44,16 +45,26 @@ export async function tryFetchTableMeta (
     schemaAlias : string,
     tableAlias : string
 ) : Promise<Sqlite3TableMeta|undefined> {
-    const sql = await sqlite_master
-        .setSchemaName(schemaAlias)
-        .whereEqSuperKey({
-            name : tableAlias,
-            type : "table",
-        })
-        .fetchValue(
-            connection,
-            columns => columns.sql
+    const sql = await squill
+        .from(
+            /**
+             * Hacky workaround for SQLite bug.
+             * https://github.com/AnyhowStep/tsql-sqlite3-browser/issues/5
+             */
+            sqlite_master
+                .setSchemaName(schemaAlias)
+                .as("x")
         )
+        .whereEq(
+            columns => columns.name,
+            tableAlias
+        )
+        .whereEq(
+            columns => columns.type,
+            "table"
+        )
+        .select(columns => [columns.sql])
+        .fetchValue(connection)
         .orUndefined();
     if (sql === undefined) {
         return undefined;

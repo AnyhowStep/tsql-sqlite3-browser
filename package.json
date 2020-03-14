@@ -1,6 +1,6 @@
 {
   "name": "@squill/sqlite3-browser",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A SQLite3 query-builder/ORM",
   "main": "dist/driver/index.js",
   "types": "dist/driver/index.d.ts",
