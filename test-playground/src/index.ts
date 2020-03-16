@@ -26,6 +26,7 @@ declare global {
   }
 }
 
+const clearTsContent = require("!raw-loader!./clear-ts-content.ts");
 const defaultPreTsContent = require("!raw-loader!./default-pre-ts-content.sql");
 const defaultPostTsContent = require("!raw-loader!./default-post-ts-content.sql");
 const defaultTsContent = require("!raw-loader!./default-ts-content.ts");
@@ -111,6 +112,7 @@ declare global {
         exportDb : () => Promise<Uint8Array>;
         importDb : (dbFile : Uint8Array) => Promise<void>;
 
+        clearTsContent : string;
         defaultPreTsContent : string;
         defaultPostTsContent : string;
         defaultTsContent : string;
@@ -142,7 +144,7 @@ window.importDb = (dbFile : Uint8Array) => pool.acquire(
     connection => connection.open(dbFile)
 );
 
-
+window.clearTsContent = clearTsContent.default;
 window.defaultPreTsContent = defaultPreTsContent.default;
 window.defaultPostTsContent = defaultPostTsContent.default;
 window.defaultTsContent = defaultTsContent.default;
