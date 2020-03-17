@@ -1,6 +1,6 @@
 {
   "name": "@squill/sqlite3-browser",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A SQLite3 query-builder/ORM",
   "main": "dist/driver/index.js",
   "types": "dist/driver/index.d.ts",
@@ -67,7 +67,7 @@
     "webpack-dev-server": "^3.10.3"
   },
   "dependencies": {
-    "@squill/squill": "0.0.7",
+    "@squill/squill": "0.0.8",
     "type-mapping": "^1.32.0"
   }
 }
